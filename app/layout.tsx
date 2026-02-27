@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { AppProvider } from "@/lib/store";
+import { SharedLayout } from "@/components/shared-layout";
 
-const inter = Inter({
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
@@ -27,9 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} dark`}>
-      <body className="font-sans antialiased bg-[#0a0a0a] text-white">
-        {children}
+    <html lang="en" className={`${bricolage.variable} ${dmSans.variable}`}>
+      <body className="font-sans antialiased bg-background text-foreground">
+        <AppProvider>
+          <SharedLayout>{children}</SharedLayout>
+        </AppProvider>
       </body>
     </html>
   );

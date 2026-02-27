@@ -9,7 +9,8 @@ import {
   type Dispatch,
 } from "react";
 import React from "react";
-import { User, Group, GroupMember, Workout, AppView } from "./types";
+import { useRouter } from "next/navigation";
+import { User, Group, GroupMember, Workout, AppView, PracticeConfig } from "./types";
 import { generateDailyWorkout } from "./workout-generator";
 
 // ── State Shape ─────────────────────────────────────────────
@@ -20,6 +21,7 @@ interface AppState {
   workout: Workout | null;
   currentDrillIndex: number;
   practiceDrillType: "memorization" | "context" | "verse-match" | "ai-themed" | null;
+  practiceConfig: PracticeConfig | null;
   groups: Group[];
   groupMembers: GroupMember[];
   isLoading: boolean;
@@ -31,6 +33,7 @@ const initialState: AppState = {
   workout: null,
   currentDrillIndex: 0,
   practiceDrillType: null,
+  practiceConfig: null,
   groups: [],
   groupMembers: [],
   isLoading: true,
@@ -53,7 +56,7 @@ type Action =
   | { type: "JOIN_GROUP"; payload: Group }
   | { type: "SET_GROUP_MEMBERS"; payload: GroupMember[] }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "START_PRACTICE"; payload: "memorization" | "context" | "verse-match" | "ai-themed" }
+  | { type: "START_PRACTICE"; payload: { type: "memorization" | "context" | "verse-match" | "ai-themed", config?: PracticeConfig } }
   | { type: "SET_GROUP_CHALLENGE"; payload: Workout }
   | { type: "DELETE_GROUP_CHALLENGE" }
   | { type: "LOAD_STATE"; payload: Partial<AppState> };
@@ -185,7 +188,7 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isLoading: action.payload };
 
     case "START_PRACTICE":
-      return { ...state, currentView: "practice", practiceDrillType: action.payload };
+      return { ...state, currentView: "practice", practiceDrillType: action.payload.type, practiceConfig: action.payload.config || null };
 
     case "SET_GROUP_CHALLENGE": {
       if (!state.user?.groupId) return state;
@@ -233,6 +236,7 @@ export function useAppDispatch() {
 export function useAuth() {
   const state = useAppState();
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const login = (name: string, email: string) => {
     const user: User = {
@@ -252,7 +256,7 @@ export function useAuth() {
       createdAt: new Date().toISOString(),
     };
     dispatch({ type: "SET_USER", payload: user });
-    dispatch({ type: "SET_VIEW", payload: "dashboard" });
+    router.push("/dashboard");
   };
 
   const logout = () => {
@@ -268,6 +272,7 @@ export function useAuth() {
 export function useWorkout() {
   const state = useAppState();
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const startWorkout = async (aiDrill?: Workout["drills"][0]) => {
     const workout = generateDailyWorkout();
@@ -277,10 +282,12 @@ export function useWorkout() {
       workout.drills[randomIndex] = aiDrill;
     }
     dispatch({ type: "START_WORKOUT", payload: workout });
+    router.push("/workout");
   };
 
   const startGroupChallenge = (challenge: Workout) => {
     dispatch({ type: "START_WORKOUT", payload: challenge });
+    router.push("/workout");
   };
 
   const completeDrill = (drillType: string, score: number) => {
@@ -292,6 +299,7 @@ export function useWorkout() {
       dispatch({ type: "NEXT_DRILL" });
     } else {
       dispatch({ type: "COMPLETE_WORKOUT" });
+      router.push("/workout-complete");
     }
   };
 
@@ -308,17 +316,20 @@ export function useWorkout() {
 export function usePractice() {
   const state = useAppState();
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
-  const startPractice = (type: "memorization" | "context" | "verse-match" | "ai-themed") => {
-    dispatch({ type: "START_PRACTICE", payload: type });
+  const startPractice = (type: "memorization" | "context" | "verse-match" | "ai-themed", config?: PracticeConfig) => {
+    dispatch({ type: "START_PRACTICE", payload: { type, config } });
+    router.push("/practice");
   };
 
   const exitPractice = () => {
-    dispatch({ type: "SET_VIEW", payload: "dashboard" });
+    router.push("/dashboard");
   };
 
   return {
     practiceDrillType: state.practiceDrillType,
+    practiceConfig: state.practiceConfig,
     startPractice,
     exitPractice,
   };
@@ -458,9 +469,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             workout: parsed.workout || null,
             currentDrillIndex: parsed.currentDrillIndex || 0,
             practiceDrillType: parsed.practiceDrillType || null,
-            currentView: parsed.user ? "dashboard" : "landing",
-          },
+            practiceConfig: parsed.practiceConfig || null,
+          } as Partial<AppState>,
         });
+        
+        // Let the layout check if we need to redirect due to auth status
+        // But disable loading regardless
+        dispatch({ type: "SET_LOADING", payload: false });
       } else {
         dispatch({ type: "SET_LOADING", payload: false });
       }
@@ -481,6 +496,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           workout: state.workout,
           currentDrillIndex: state.currentDrillIndex,
           practiceDrillType: state.practiceDrillType,
+          practiceConfig: state.practiceConfig,
         })
       );
     }

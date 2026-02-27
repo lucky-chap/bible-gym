@@ -64,6 +64,11 @@ export interface VerseMatchDrill {
 
 export type Drill = MemorizationDrill | ContextChallengeDrill | VerseMatchDrill;
 
+export interface PracticeConfig {
+  by: "book" | "chapter" | "theme";
+  value: string;
+}
+
 // ── Workout Types ───────────────────────────────────────────
 
 export interface Workout {

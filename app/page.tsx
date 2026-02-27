@@ -1,12 +1,7 @@
 "use client";
 
-import { AppProvider } from "@/lib/store";
-import { AppRouter } from "@/components/app-router";
+import { LandingPage } from "@/components/landing-page";
 
 export default function Page() {
-  return (
-    <AppProvider>
-      <AppRouter />
-    </AppProvider>
-  );
+  return <LandingPage />;
 }

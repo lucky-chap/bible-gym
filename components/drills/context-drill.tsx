@@ -49,28 +49,34 @@ export function ContextChallengeDrill({
     return (
       <div className="space-y-8 animate-in fade-in">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
-            <Target className="w-6 h-6 text-orange-400" />
+          <div
+            className="w-12 h-12 rounded-2xl bg-[#F59E0B] border-2 border-foreground flex items-center justify-center"
+            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+          >
+            <Target className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">
+            <h2 className="text-lg font-bold text-foreground">
               Context Challenge Results
             </h2>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white/5 border border-white/10 p-6 text-center">
+        <div
+          className="rounded-2xl bg-card border-2 border-foreground p-6 text-center"
+          style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+        >
           <div className="flex items-center justify-center gap-2 mb-2">
             {score === 100 ? (
-              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+              <CheckCircle2 className="w-8 h-8 text-[#10B981]" />
             ) : (
-              <XCircle className="w-8 h-8 text-amber-400" />
+              <XCircle className="w-8 h-8 text-[#F59E0B]" />
             )}
-            <span className="text-4xl font-extrabold text-white">
+            <span className="text-4xl font-black text-foreground">
               {score}/100
             </span>
           </div>
-          <p className="text-gray-400 text-sm mt-2">
+          <p className="text-muted-foreground text-sm mt-2 font-medium">
             {score === 100
               ? "Excellent! You know your Scripture context."
               : "Study the background of these passages."}
@@ -84,32 +90,36 @@ export function ContextChallengeDrill({
             return (
               <div
                 key={q.id}
-                className="p-4 rounded-xl bg-white/5 border border-white/10"
+                className="p-4 rounded-xl bg-card border-2 border-foreground"
+                style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
               >
-                <div className="text-xs text-orange-400 font-bold mb-2">
+                <div className="text-xs text-[var(--primary)] font-black mb-2">
                   Question {idx + 1} • {q.passage.reference}
                 </div>
-                <div className="text-sm text-gray-200 mb-3">{q.question}</div>
+                <div className="text-sm text-foreground mb-3 font-medium">
+                  {q.question}
+                </div>
                 <div className="flex items-start gap-2">
                   {isCorrect ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />
                   ) : (
-                    <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                    <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                   )}
                   <div className="flex flex-col gap-1 text-sm">
                     {isCorrect ? (
-                      <span className="text-emerald-400 font-medium">
-                        You got it right: "{q.options[q.correctIndex]}"
+                      <span className="text-[#10B981] font-bold">
+                        You got it right: &ldquo;{q.options[q.correctIndex]}
+                        &rdquo;
                       </span>
                     ) : (
                       <>
-                        <span className="text-red-400 line-through">
+                        <span className="text-red-500 line-through font-medium">
                           You chose:{" "}
                           {chosenIndex !== undefined
                             ? q.options[chosenIndex]
                             : "Skipped"}
                         </span>
-                        <span className="text-emerald-400 font-medium">
+                        <span className="text-[#10B981] font-bold">
                           Correct answer: {q.options[q.correctIndex]}
                         </span>
                       </>
@@ -123,7 +133,8 @@ export function ContextChallengeDrill({
 
         <button
           onClick={() => onComplete(score)}
-          className="w-full py-4 rounded-2xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-base shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.01] transition-all duration-300"
+          className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+          style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
         >
           Next Drill →
         </button>
@@ -133,8 +144,8 @@ export function ContextChallengeDrill({
 
   const getOptionStyle = (index: number) => {
     return index === currentSelection
-      ? "border-orange-500/50 bg-orange-500/10 ring-2 ring-orange-500/20"
-      : "border-white/5 bg-white/5 hover:border-white/10 hover:bg-white/10";
+      ? "border-[var(--primary)] bg-primary/10"
+      : "border-foreground bg-card hover:translate-y-[-2px]";
   };
 
   return (
@@ -145,12 +156,17 @@ export function ContextChallengeDrill({
       {/* Drill header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center">
-            <Target className="w-6 h-6 text-orange-400" />
+          <div
+            className="w-12 h-12 rounded-2xl bg-[#F59E0B] border-2 border-foreground flex items-center justify-center"
+            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+          >
+            <Target className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Context Challenge</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-lg font-bold text-foreground">
+              Context Challenge
+            </h2>
+            <p className="text-sm text-muted-foreground font-medium">
               Question {currentQuestionIndex + 1} of {drill.questions.length}
             </p>
           </div>
@@ -158,18 +174,21 @@ export function ContextChallengeDrill({
       </div>
 
       {/* Passage context */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
-        <div className="text-sm font-medium text-orange-400 mb-3">
+      <div
+        className="rounded-2xl bg-card border-2 border-foreground p-6"
+        style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+      >
+        <div className="text-sm font-black text-[var(--primary)] mb-3">
           {currentQuestion.passage.reference}
         </div>
-        <p className="text-gray-300 leading-relaxed italic">
+        <p className="text-foreground leading-relaxed  font-medium">
           &ldquo;{currentQuestion.passage.text}&rdquo;
         </p>
       </div>
 
       {/* Question */}
       <div>
-        <h3 className="text-xl font-bold text-white mb-6">
+        <h3 className="text-xl font-bold text-foreground mb-6">
           {currentQuestion.question}
         </h3>
 
@@ -178,19 +197,25 @@ export function ContextChallengeDrill({
             <button
               key={index}
               onClick={() => selectOption(index)}
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left ${getOptionStyle(index)}`}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left ${getOptionStyle(index)}`}
+              style={{
+                boxShadow:
+                  index === currentSelection
+                    ? "3px 3px 0px 0px var(--primary)"
+                    : "3px 3px 0px 0px var(--foreground)",
+              }}
             >
               <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
+                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 border-2 border-foreground ${
                   index === currentSelection
-                    ? "bg-orange-500/20 text-orange-400"
-                    : "bg-white/5 text-gray-500"
+                    ? "bg-primary text-white"
+                    : "bg-background text-foreground"
                 }`}
               >
                 {String.fromCharCode(65 + index)}
               </div>
               <span
-                className={`font-medium ${index === currentSelection ? "text-white" : "text-gray-300"}`}
+                className={`font-medium ${index === currentSelection ? "text-foreground" : "text-foreground"}`}
               >
                 {option}
               </span>
@@ -202,11 +227,15 @@ export function ContextChallengeDrill({
       <button
         onClick={handleNextOrSubmit}
         disabled={currentSelection === undefined}
-        className={`w-full py-4 rounded-2xl font-bold text-base transition-all duration-300 flex items-center justify-center gap-2 ${
+        className={`w-full py-4 rounded-full font-bold text-base transition-all duration-200 flex items-center justify-center gap-2 border-2 border-foreground ${
           currentSelection === undefined
-            ? "bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5"
-            : "bg-linear-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.01]"
+            ? "bg-muted text-[#B0AAA2] cursor-not-allowed"
+            : "bg-primary text-white hover:translate-x-[-2px] hover:translate-y-[-2px]"
         }`}
+        style={{
+          boxShadow:
+            currentSelection === undefined ? "none" : "4px 4px 0px 0px var(--foreground)",
+        }}
       >
         {isFinalQuestion ? "Submit Answers" : "Next Question"}
         {!isFinalQuestion && <ArrowRight className="w-5 h-5" />}

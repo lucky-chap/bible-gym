@@ -1,6 +1,7 @@
 "use client";
 
-import { useAppState, useAppDispatch } from "@/lib/store";
+import { useAppDispatch, useAppState } from "@/lib/store";
+import { useRouter } from "next/navigation";
 import {
   Trophy,
   Flame,
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 export function WorkoutComplete() {
   const state = useAppState();
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { workout, user } = state;
   const [animatedScore, setAnimatedScore] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
@@ -50,20 +52,17 @@ export function WorkoutComplete() {
     {
       icon: BookOpen,
       label: "Memorization",
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
+      color: "#3B82F6",
     },
     {
       icon: Target,
       label: "Context",
-      color: "text-orange-400",
-      bg: "bg-orange-500/10",
+      color: "#F59E0B",
     },
     {
       icon: Zap,
       label: "Verse Match",
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/10",
+      color: "#10B981",
     },
   ];
 
@@ -92,44 +91,43 @@ export function WorkoutComplete() {
   const motivation = getMotivation();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
-      {/* Celebration background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-orange-500/8 rounded-full blur-[150px] animate-pulse" />
-        <div
-          className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-amber-500/5 rounded-full blur-[100px] animate-pulse"
-          style={{ animationDelay: "1s" }}
-        />
-      </div>
-
+    <div className="h-full w-full flex items-center justify-center p-6 py-12">
       <div className="relative w-full max-w-md text-center space-y-8">
         {/* Trophy */}
         <div className="relative">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center mx-auto shadow-2xl shadow-orange-500/30 animate-bounce">
+          <div
+            className="w-24 h-24 rounded-3xl bg-primary border-2 border-foreground flex items-center justify-center mx-auto animate-bounce"
+            style={{ boxShadow: "6px 6px 0px 0px var(--foreground)" }}
+          >
             <Trophy className="w-12 h-12 text-white" />
           </div>
         </div>
 
         {/* Score */}
         <div>
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-2 tabular-nums">
+          <h1 className="text-5xl md:text-6xl font-black text-foreground mb-2 tabular-nums">
             {animatedScore}
-            <span className="text-2xl text-gray-500">/300</span>
+            <span className="text-2xl text-muted-foreground">/300</span>
           </h1>
-          <div className="text-xl font-extrabold bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">
+          <div className="text-xl font-black text-[var(--primary)] ">
             {motivation.text}
           </div>
-          <p className="text-gray-500 mt-1">{motivation.sub}</p>
+          <p className="text-muted-foreground mt-1 font-medium">{motivation.sub}</p>
         </div>
 
         {/* Streak */}
-        <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/5">
-          <Flame className="w-6 h-6 text-orange-400" />
+        <div
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-card border-2 border-foreground"
+          style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+        >
+          <Flame className="w-6 h-6 text-[var(--primary)]" />
           <div className="text-left">
-            <div className="text-lg font-extrabold text-white">
+            <div className="text-lg font-black text-foreground">
               {user.streak} Day Streak
             </div>
-            <div className="text-xs text-gray-500">Keep it going tomorrow!</div>
+            <div className="text-xs text-muted-foreground font-medium">
+              Keep it going tomorrow!
+            </div>
           </div>
         </div>
 
@@ -139,29 +137,34 @@ export function WorkoutComplete() {
             {drillIcons.map((drill, i) => (
               <div
                 key={drill.label}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5"
+                className="flex items-center gap-4 p-4 rounded-2xl bg-card border-2 border-foreground"
+                style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl ${drill.bg} flex items-center justify-center`}
+                  className="w-10 h-10 rounded-xl border-2 border-foreground flex items-center justify-center"
+                  style={{
+                    backgroundColor: drill.color,
+                    boxShadow: "2px 2px 0px 0px var(--foreground)",
+                  }}
                 >
-                  <drill.icon className={`w-5 h-5 ${drill.color}`} />
+                  <drill.icon className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-sm font-bold text-foreground">
                     {drill.label}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-20 rounded-full bg-white/5 overflow-hidden">
+                  <div className="h-3 w-20 rounded-full bg-muted border-2 border-foreground overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-1000"
+                      className="h-full rounded-full bg-primary transition-all duration-1000"
                       style={{
                         width: `${scores[i]}%`,
                         transitionDelay: `${i * 200}ms`,
                       }}
                     />
                   </div>
-                  <span className="text-sm font-bold text-white w-12 text-right">
+                  <span className="text-sm font-black text-foreground w-12 text-right">
                     {scores[i]}
                   </span>
                 </div>
@@ -171,9 +174,9 @@ export function WorkoutComplete() {
         )}
 
         {/* Total Points */}
-        <div className="flex items-center justify-center gap-2 text-gray-500">
-          <Star className="w-4 h-4 text-amber-400" />
-          <span className="text-sm font-medium">
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <Star className="w-4 h-4 text-[#F59E0B]" />
+          <span className="text-sm font-bold">
             Total lifetime: {user.totalScore.toLocaleString()} pts
           </span>
         </div>
@@ -181,12 +184,10 @@ export function WorkoutComplete() {
         {/* Back to Dashboard/Group */}
         <button
           onClick={() =>
-            dispatch({
-              type: "SET_VIEW",
-              payload: workout.isGroupChallenge ? "group" : "dashboard",
-            })
+            router.push(workout.isGroupChallenge ? "/group" : "/dashboard")
           }
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-base shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 flex items-center justify-center gap-2"
+          style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
         >
           {workout.isGroupChallenge ? "Back to Group" : "Back to Dashboard"}
           <ArrowRight className="w-5 h-5" />
@@ -194,12 +195,9 @@ export function WorkoutComplete() {
 
         <button
           onClick={() =>
-            dispatch({
-              type: "SET_VIEW",
-              payload: workout.isGroupChallenge ? "group" : "dashboard",
-            })
+            router.push(workout.isGroupChallenge ? "/group" : "/dashboard")
           }
-          className="text-gray-600 text-sm hover:text-gray-400 transition-colors"
+          className="text-muted-foreground text-sm hover:text-foreground transition-colors font-bold"
         >
           <Dumbbell className="w-4 h-4 inline mr-1" />
           {workout.isGroupChallenge
