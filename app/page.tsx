@@ -1,5 +1,12 @@
-import { ComponentExample } from "@/components/component-example";
+"use client";
+
+import { AppProvider } from "@/lib/store";
+import { AppRouter } from "@/components/app-router";
 
 export default function Page() {
-return <ComponentExample />;
+  return (
+    <AppProvider>
+      <AppRouter />
+    </AppProvider>
+  );
 }
