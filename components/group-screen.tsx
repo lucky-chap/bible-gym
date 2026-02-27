@@ -18,16 +18,22 @@ import {
   Check,
   Crown,
   Medal,
-  Sparkles,
   Play,
+  Sparkles,
   Loader2,
 } from "lucide-react";
 
 export function GroupScreen() {
   const state = useAppState();
   const dispatch = useAppDispatch();
-  const { groupMembers, userGroup, createGroup, joinGroup, setGroupChallenge } =
-    useGroups();
+  const {
+    groupMembers,
+    userGroup,
+    createGroup,
+    joinGroup,
+    setGroupChallenge,
+    deleteGroupChallenge,
+  } = useGroups();
   const [tab, setTab] = useState<"leaderboard" | "join" | "create">(
     userGroup ? "leaderboard" : "join",
   );
@@ -124,38 +130,34 @@ export function GroupScreen() {
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
         {/* Tabs */}
         <div className="flex gap-2 p-1 rounded-2xl bg-white/[0.03] border border-white/5">
-          {userGroup && (
-            <button
-              onClick={() => setTab("leaderboard")}
-              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
-                tab === "leaderboard"
-                  ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                  : "text-gray-500 hover:text-gray-300"
-              }`}
-            >
-              Leaderboard
-            </button>
+          {userGroup ? (
+            <div className="flex-1 py-3 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-xl text-center text-sm font-semibold">
+              My Group Leaderboard
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => setTab("join")}
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+                  tab === "join"
+                    ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                Join Group
+              </button>
+              <button
+                onClick={() => setTab("create")}
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+                  tab === "create"
+                    ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                Create Group
+              </button>
+            </>
           )}
-          <button
-            onClick={() => setTab("join")}
-            className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
-              tab === "join"
-                ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            Join Group
-          </button>
-          <button
-            onClick={() => setTab("create")}
-            className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
-              tab === "create"
-                ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            Create Group
-          </button>
         </div>
 
         {/* Tab Content */}
@@ -190,25 +192,24 @@ export function GroupScreen() {
               </div>
             </div>
 
-            {/* Group Challenge Section */}
-            <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-blue-500/20 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white leading-tight">
-                      AI Group Challenge
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      Collaborative themed workout
-                    </p>
+            {userGroup.groupChallenge ? (
+              <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-blue-500/20 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                      <Play className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white leading-tight">
+                        Active Group Challenge
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        Collaborative themed workout
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {userGroup.groupChallenge ? (
                 <div className="bg-black/20 rounded-xl border border-white/5 p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -219,47 +220,93 @@ export function GroupScreen() {
                         </span>
                       </h4>
                       <p className="text-xs text-gray-500">
-                        Active challenge for all members
+                        {userGroup.challengeParticipants?.includes(user.id)
+                          ? userGroup.challengeParticipants.length >=
+                            userGroup.members.length
+                            ? "Everyone finished! Available again."
+                            : "You've completed this challenge."
+                          : "Active challenge for all members"}
                       </p>
                     </div>
-                    <button
-                      onClick={() =>
-                        startGroupChallenge(userGroup.groupChallenge!)
-                      }
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      Start
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {user.id === userGroup.createdBy && (
+                        <button
+                          onClick={deleteGroupChallenge}
+                          className="px-3 py-2 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20"
+                        >
+                          Delete
+                        </button>
+                      )}
+                      <button
+                        onClick={() =>
+                          startGroupChallenge(userGroup.groupChallenge!)
+                        }
+                        disabled={
+                          userGroup.challengeParticipants?.includes(user.id) &&
+                          (userGroup.challengeParticipants?.length || 0) <
+                            userGroup.members.length
+                        }
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        {userGroup.challengeParticipants?.includes(user.id) &&
+                        (userGroup.challengeParticipants?.length || 0) <
+                          userGroup.members.length + 5
+                          ? "Done"
+                          : "Start"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <form onSubmit={handleGenerateChallenge} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value)}
-                    placeholder="Enter a theme (e.g., Faith, Forgiveness)"
-                    disabled={isGenerating}
-                    className="flex-1 px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!theme.trim() || isGenerating}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors flex items-center gap-2"
+              </div>
+            ) : (
+              // Only show generation form to creator
+              user.id === userGroup.createdBy && (
+                <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-blue-500/20 p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white leading-tight">
+                          Set Group Challenge
+                        </h3>
+                        <p className="text-sm text-gray-400">
+                          Generate an AI workout for the whole group
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={handleGenerateChallenge}
+                    className="flex gap-2"
                   >
-                    {isGenerating ? (
-                      <>
+                    <input
+                      type="text"
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value)}
+                      placeholder="Theme (e.g., Gratitude, Faith)"
+                      disabled={isGenerating}
+                      className="flex-1 px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!theme.trim() || isGenerating}
+                      className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white font-bold rounded-xl transition-all flex items-center gap-2"
+                    >
+                      {isGenerating ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      "Generate"
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                      Set
+                    </button>
+                  </form>
+                </div>
+              )
+            )}
 
             {/* Leaderboard */}
             <div className="space-y-2">

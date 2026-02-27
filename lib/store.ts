@@ -19,7 +19,7 @@ interface AppState {
   currentView: AppView;
   workout: Workout | null;
   currentDrillIndex: number;
-  practiceDrillType: "memorization" | "context" | "verse-match" | null;
+  practiceDrillType: "memorization" | "context" | "verse-match" | "ai-themed" | null;
   groups: Group[];
   groupMembers: GroupMember[];
   isLoading: boolean;
@@ -53,8 +53,9 @@ type Action =
   | { type: "JOIN_GROUP"; payload: Group }
   | { type: "SET_GROUP_MEMBERS"; payload: GroupMember[] }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "START_PRACTICE"; payload: "memorization" | "context" | "verse-match" }
+  | { type: "START_PRACTICE"; payload: "memorization" | "context" | "verse-match" | "ai-themed" }
   | { type: "SET_GROUP_CHALLENGE"; payload: Workout }
+  | { type: "DELETE_GROUP_CHALLENGE" }
   | { type: "LOAD_STATE"; payload: Partial<AppState> };
 
 // ── Reducer ─────────────────────────────────────────────────
@@ -128,9 +129,37 @@ function appReducer(state: AppState, action: Action): AppState {
         lastWorkoutDate: today,
       };
 
+      const updatedGroupMembers = state.groupMembers.map((m) =>
+        m.userId === updatedUser.id
+          ? {
+              ...m,
+              weeklyScore: m.weeklyScore + state.workout!.totalScore,
+              streak: updatedUser.streak,
+            }
+          : m
+      ).sort((a, b) => b.weeklyScore - a.weeklyScore);
+
+      let updatedGroups = state.groups;
+      if (state.workout.isGroupChallenge && state.user.groupId) {
+        updatedGroups = state.groups.map((g) => {
+          if (g.id === state.user!.groupId) {
+            const participants = g.challengeParticipants || [];
+            if (!participants.includes(state.user!.id)) {
+              return {
+                ...g,
+                challengeParticipants: [...participants, state.user!.id],
+              };
+            }
+          }
+          return g;
+        });
+      }
+
       return {
         ...state,
         user: updatedUser,
+        groups: updatedGroups,
+        groupMembers: updatedGroupMembers,
         workout: { ...state.workout, completed: true },
         currentView: "workout-complete",
       };
@@ -141,7 +170,7 @@ function appReducer(state: AppState, action: Action): AppState {
 
     case "JOIN_GROUP": {
       const user = state.user;
-      if (!user) return state;
+      if (!user || user.groupId) return state;
       return {
         ...state,
         user: { ...user, groupId: action.payload.id },
@@ -160,9 +189,19 @@ function appReducer(state: AppState, action: Action): AppState {
 
     case "SET_GROUP_CHALLENGE": {
       if (!state.user?.groupId) return state;
-      const updatedGroups = state.groups.map(g => 
-        g.id === state.user!.groupId 
-          ? { ...g, groupChallenge: action.payload } 
+      const updatedGroups = state.groups.map((g) =>
+        g.id === state.user!.groupId
+          ? { ...g, groupChallenge: action.payload, challengeParticipants: [] }
+          : g
+      );
+      return { ...state, groups: updatedGroups };
+    }
+
+    case "DELETE_GROUP_CHALLENGE": {
+      if (!state.user?.groupId) return state;
+      const updatedGroups = state.groups.map((g) =>
+        g.id === state.user!.groupId
+          ? { ...g, groupChallenge: null, challengeParticipants: [] }
           : g
       );
       return { ...state, groups: updatedGroups };
@@ -230,8 +269,13 @@ export function useWorkout() {
   const state = useAppState();
   const dispatch = useAppDispatch();
 
-  const startWorkout = () => {
+  const startWorkout = async (aiDrill?: Workout["drills"][0]) => {
     const workout = generateDailyWorkout();
+    if (aiDrill) {
+      // Replace one random drill with the AI one
+      const randomIndex = Math.floor(Math.random() * 3);
+      workout.drills[randomIndex] = aiDrill;
+    }
     dispatch({ type: "START_WORKOUT", payload: workout });
   };
 
@@ -265,7 +309,7 @@ export function usePractice() {
   const state = useAppState();
   const dispatch = useAppDispatch();
 
-  const startPractice = (type: "memorization" | "context" | "verse-match") => {
+  const startPractice = (type: "memorization" | "context" | "verse-match" | "ai-themed") => {
     dispatch({ type: "START_PRACTICE", payload: type });
   };
 
@@ -333,13 +377,17 @@ export function useGroups() {
     dispatch({ type: "SET_GROUP_CHALLENGE", payload: challenge });
   };
 
+  const deleteGroupChallenge = () => {
+    dispatch({ type: "DELETE_GROUP_CHALLENGE" });
+  };
+
   return {
-    groups: state.groups,
     groupMembers: state.groupMembers,
     userGroup: state.groups.find((g) => g.id === state.user?.groupId),
     createGroup,
     joinGroup,
     setGroupChallenge,
+    deleteGroupChallenge,
   };
 }
 
@@ -407,6 +455,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             user: parsed.user,
             groups: parsed.groups || [],
             groupMembers: parsed.groupMembers || [],
+            workout: parsed.workout || null,
+            currentDrillIndex: parsed.currentDrillIndex || 0,
+            practiceDrillType: parsed.practiceDrillType || null,
             currentView: parsed.user ? "dashboard" : "landing",
           },
         });
@@ -427,10 +478,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           user: state.user,
           groups: state.groups,
           groupMembers: state.groupMembers,
+          workout: state.workout,
+          currentDrillIndex: state.currentDrillIndex,
+          practiceDrillType: state.practiceDrillType,
         })
       );
     }
-  }, [state.user, state.groups, state.groupMembers, state.isLoading]);
+  }, [
+    state.user,
+    state.groups,
+    state.groupMembers,
+    state.workout,
+    state.currentDrillIndex,
+    state.isLoading,
+  ]);
 
   return React.createElement(
     AppStateContext.Provider,

@@ -20,6 +20,7 @@ export interface Group {
   createdBy: string;
   createdAt: string;
   groupChallenge?: Workout | null;
+  challengeParticipants?: string[]; // user IDs who finished the current challenge
 }
 
 export interface GroupMember {

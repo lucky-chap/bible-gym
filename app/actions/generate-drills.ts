@@ -163,3 +163,20 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
     totalScore: 0,
   };
 }
+
+export async function generateRandomAIDrill(): Promise<Workout["drills"][0]> {
+  const themes = [
+    "Faith and Endurance",
+    "Love and Compassion",
+    "God's Power and Majesty",
+    "Forgiveness and Mercy",
+    "Hope and Encouragement",
+    "Wisdom and Guidance",
+    "Peace and Stillness",
+    "Service and Sacrifice",
+  ];
+  const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+  const fullWorkout = await generateThemedWorkout(randomTheme);
+  // Pick a random drill from the 3 types
+  return fullWorkout.drills[Math.floor(Math.random() * 3)];
+}
