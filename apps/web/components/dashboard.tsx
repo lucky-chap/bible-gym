@@ -17,10 +17,10 @@ import {
   BookOpen,
   GripVertical,
 } from "lucide-react";
-import {
+/* import {
   generateRandomAIDrill,
   generateThemedWorkout,
-} from "@/app/actions/generate-drills";
+} from "@/app/actions/generate-drills"; */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { VerseSelector } from "./mastery/verse-selector";
@@ -101,13 +101,8 @@ export function Dashboard() {
                 if (!hasCompletedToday) {
                   setIsStartingDaily(true);
                   try {
-                    const aiDrill = await generateRandomAIDrill();
-                    await startWorkout(aiDrill);
-                  } catch (error) {
-                    console.error(
-                      "Failed to start daily workout with AI:",
-                      error,
-                    );
+                    // const aiDrill = await generateRandomAIDrill();
+                    // await startWorkout(aiDrill);
                     await startWorkout(); // Fallback to normal
                   } finally {
                     setIsStartingDaily(false);
@@ -198,7 +193,7 @@ export function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                {/* AI Generator Option */}
+                {/* AI Generator Option (Disabled)
                 <div
                   className="rounded-2xl bg-[#EFF6FF] border-2 border-foreground p-6 transition-all hover:bg-[#DBEAFE]"
                   style={{ boxShadow: "4px 4px 0px 0px #3B82F6" }}
@@ -260,6 +255,7 @@ export function Dashboard() {
                     </button>
                   </div>
                 </div>
+                */}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[

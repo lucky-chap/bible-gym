@@ -7,7 +7,7 @@ import {
   useGroups,
   useWorkout,
 } from "@/lib/store";
-import { generateThemedWorkout } from "@/app/actions/generate-drills";
+// import { generateThemedWorkout } from "@/app/actions/generate-drills";
 import {
   Users,
   Trophy,
@@ -79,7 +79,7 @@ export function GroupScreen() {
     }
   };
 
-  const handleGenerateChallenge = async (e: React.FormEvent) => {
+  /* const handleGenerateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!theme.trim() || isGenerating) return;
 
@@ -93,7 +93,7 @@ export function GroupScreen() {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }; */
 
   const getRankIcon = (index: number) => {
     if (index === 0) return <Crown className="w-5 h-5 text-[#F59E0B]" />;
@@ -131,7 +131,9 @@ export function GroupScreen() {
                     : "text-muted-foreground hover:text-foreground border-transparent"
                 }`}
                 style={
-                  tab === "join" ? { boxShadow: "2px 2px 0px 0px var(--foreground)" } : {}
+                  tab === "join"
+                    ? { boxShadow: "2px 2px 0px 0px var(--foreground)" }
+                    : {}
                 }
               >
                 Join Group
@@ -191,85 +193,94 @@ export function GroupScreen() {
               </div>
             </div>
 
-            {userGroup.groupChallenge ? (
-              <div
-                className="rounded-2xl bg-card border-2 border-foreground p-6"
-                style={{ boxShadow: "4px 4px 0px 0px #3B82F6" }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center"
-                      style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                    >
-                      <Play className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-foreground leading-tight">
-                        Active Group Challenge
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Collaborative themed workout
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
+            {
+              userGroup.groupChallenge ? (
                 <div
-                  className="rounded-xl bg-background border-2 border-foreground p-4"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+                  className="rounded-2xl bg-card border-2 border-foreground p-6"
+                  style={{ boxShadow: "4px 4px 0px 0px #3B82F6" }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-foreground mb-1">
-                        Theme:{" "}
-                        <span className="text-[#3B82F6] ">
-                          &ldquo;{userGroup.groupChallenge.theme}&rdquo;
-                        </span>
-                      </h4>
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {userGroup.challengeParticipants?.includes(user.id)
-                          ? userGroup.challengeParticipants.length >=
-                            userGroup.members.length
-                            ? "Everyone finished! Available again."
-                            : "You've completed this challenge."
-                          : "Active challenge for all members"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {user.id === userGroup.createdBy && (
-                        <button
-                          onClick={deleteGroupChallenge}
-                          className="px-3 py-2 text-xs font-bold text-white bg-red-500 rounded-lg transition-colors border-2 border-foreground hover:bg-red-600"
-                          style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                        >
-                          Delete
-                        </button>
-                      )}
-                      <button
-                        onClick={() =>
-                          startGroupChallenge(userGroup.groupChallenge!)
-                        }
-                        disabled={
-                          userGroup.challengeParticipants?.includes(user.id) &&
-                          (userGroup.challengeParticipants?.length || 0) <
-                            userGroup.members.length
-                        }
-                        className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors border-2 border-foreground"
-                        style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center"
+                        style={{
+                          boxShadow: "2px 2px 0px 0px var(--foreground)",
+                        }}
                       >
-                        <Play className="w-4 h-4 fill-current" />
-                        {userGroup.challengeParticipants?.includes(user.id) &&
-                        (userGroup.challengeParticipants?.length || 0) <
-                          userGroup.members.length + 5
-                          ? "Done"
-                          : "Start"}
-                      </button>
+                        <Play className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground leading-tight">
+                          Active Group Challenge
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Collaborative themed workout
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className="rounded-xl bg-background border-2 border-foreground p-4"
+                    style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-foreground mb-1">
+                          Theme:{" "}
+                          <span className="text-[#3B82F6] ">
+                            &ldquo;{userGroup.groupChallenge.theme}&rdquo;
+                          </span>
+                        </h4>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {userGroup.challengeParticipants?.includes(user.id)
+                            ? userGroup.challengeParticipants.length >=
+                              userGroup.members.length
+                              ? "Everyone finished! Available again."
+                              : "You've completed this challenge."
+                            : "Active challenge for all members"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {user.id === userGroup.createdBy && (
+                          <button
+                            onClick={deleteGroupChallenge}
+                            className="px-3 py-2 text-xs font-bold text-white bg-red-500 rounded-lg transition-colors border-2 border-foreground hover:bg-red-600"
+                            style={{
+                              boxShadow: "2px 2px 0px 0px var(--foreground)",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                        <button
+                          onClick={() =>
+                            startGroupChallenge(userGroup.groupChallenge!)
+                          }
+                          disabled={
+                            userGroup.challengeParticipants?.includes(
+                              user.id,
+                            ) &&
+                            (userGroup.challengeParticipants?.length || 0) <
+                              userGroup.members.length
+                          }
+                          className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors border-2 border-foreground"
+                          style={{
+                            boxShadow: "2px 2px 0px 0px var(--foreground)",
+                          }}
+                        >
+                          <Play className="w-4 h-4 fill-current" />
+                          {userGroup.challengeParticipants?.includes(user.id) &&
+                          (userGroup.challengeParticipants?.length || 0) <
+                            userGroup.members.length + 5
+                            ? "Done"
+                            : "Start"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
+              ) : null /* (
               // Only show generation form to creator
               user.id === userGroup.createdBy && (
                 <div
@@ -323,7 +334,8 @@ export function GroupScreen() {
                   </form>
                 </div>
               )
-            )}
+            ) */
+            }
 
             {/* Leaderboard */}
             <div className="space-y-2">

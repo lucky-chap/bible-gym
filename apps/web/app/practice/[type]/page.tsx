@@ -149,7 +149,7 @@ export default function PracticeConfigPage() {
               { id: "random", label: "Random", icon: Sparkles },
               { id: "book", label: "By Book", icon: Book },
               { id: "chapter", label: "By Chapter", icon: Hash },
-              { id: "theme", label: "By Theme", icon: Search },
+              // { id: "theme", label: "By Theme", icon: Search },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -176,7 +176,7 @@ export default function PracticeConfigPage() {
           </div>
         </div>
 
-        {selectionType === "theme" && (
+        {/* selectionType === "theme" && (
           <div className="space-y-4">
             <label className="text-sm font-bold text-foreground">
               What theme would you like to practice?
@@ -195,7 +195,7 @@ export default function PracticeConfigPage() {
               AI will generate custom drills based on your chosen theme.
             </p>
           </div>
-        )}
+        ) */}
 
         {/* Mnemonic Settings (Memorization only) */}
         {type === "memorization" && (
