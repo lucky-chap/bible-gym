@@ -11,6 +11,7 @@ import {
   Target,
   Zap,
   BookOpen,
+  GripVertical,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -64,20 +65,26 @@ export function WorkoutComplete() {
       label: "Verse Match",
       color: "#10B981",
     },
+    {
+      icon: GripVertical,
+      label: "Rearrange",
+      color: "#EC4899",
+    },
   ];
 
   const scores = [
     workout.scores.memorization,
     workout.scores.context,
     workout.scores.verseMatch,
+    workout.scores.rearrange,
   ];
 
   const getMotivation = () => {
-    if (workout.totalScore >= 280)
+    if (workout.totalScore >= 380)
       return { text: "LEGENDARY! 🔥", sub: "You crushed that workout!" };
-    if (workout.totalScore >= 200)
+    if (workout.totalScore >= 250)
       return { text: "STRONG REP! 💪", sub: "Solid training session." };
-    if (workout.totalScore >= 100)
+    if (workout.totalScore >= 150)
       return {
         text: "GOOD EFFORT! ✊",
         sub: "Every rep counts. Keep going.",
@@ -107,12 +114,14 @@ export function WorkoutComplete() {
         <div>
           <h1 className="text-5xl md:text-6xl font-black text-foreground mb-2 tabular-nums">
             {animatedScore}
-            <span className="text-2xl text-muted-foreground">/300</span>
+            <span className="text-2xl text-muted-foreground">/400</span>
           </h1>
-          <div className="text-xl font-black text-[var(--primary)] ">
+          <div className="text-xl font-black text-primary ">
             {motivation.text}
           </div>
-          <p className="text-muted-foreground mt-1 font-medium">{motivation.sub}</p>
+          <p className="text-muted-foreground mt-1 font-medium">
+            {motivation.sub}
+          </p>
         </div>
 
         {/* Streak */}
@@ -120,7 +129,7 @@ export function WorkoutComplete() {
           className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-card border-2 border-foreground"
           style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
         >
-          <Flame className="w-6 h-6 text-[var(--primary)]" />
+          <Flame className="w-6 h-6 text-primary" />
           <div className="text-left">
             <div className="text-lg font-black text-foreground">
               {user.streak} Day Streak

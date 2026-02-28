@@ -14,13 +14,18 @@ import {
   Dumbbell,
   Target,
   Zap,
+  GripVertical,
 } from "lucide-react";
 
 export default function PracticeConfigPage() {
   const params = useParams();
   const router = useRouter();
   const { startPractice } = usePractice();
-  const type = params.type as "memorization" | "context" | "verse-match";
+  const type = params.type as
+    | "memorization"
+    | "context"
+    | "verse-match"
+    | "rearrange";
 
   const [selectionType, setSelectionType] = useState<
     "random" | "book" | "chapter" | "theme"
@@ -49,6 +54,12 @@ export default function PracticeConfigPage() {
       desc: "Match the correct reference to the given verse text",
       icon: Zap,
       color: "#10B981",
+    },
+    rearrange: {
+      name: "Rearrange",
+      desc: "Drag verses into the correct sequence",
+      icon: GripVertical,
+      color: "#EC4899",
     },
   }[type] || {
     name: "Practice",

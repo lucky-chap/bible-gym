@@ -15,6 +15,7 @@ import {
   Sparkles,
   Loader2,
   BookOpen,
+  GripVertical,
 } from "lucide-react";
 import {
   generateRandomAIDrill,
@@ -156,7 +157,7 @@ export function Dashboard() {
                   <p className="text-muted-foreground text-lg font-bold">
                     {hasCompletedToday
                       ? "You've earned your points. See you at sunrise."
-                      : "3 intense drills · ~5 min session · 300 pts potential"}
+                      : "4 intense drills · ~6 min session · 400 pts potential"}
                   </p>
                 </div>
                 {!hasCompletedToday && (
@@ -292,6 +293,14 @@ export function Dashboard() {
                       color: "#10B981",
                       type: "verse-match" as const,
                       onClick: () => router.push("/practice/verse-match"),
+                    },
+                    {
+                      icon: GripVertical,
+                      name: "Rearrange",
+                      desc: "Drag & Drop",
+                      color: "#EC4899",
+                      type: "rearrange" as const,
+                      onClick: () => router.push("/practice/rearrange"),
                     },
                   ].map((drill) => (
                     <button

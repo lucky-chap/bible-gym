@@ -5,6 +5,7 @@ import { usePractice } from "@/lib/store";
 import { MemorizationDrill } from "./drills/memorization-drill";
 import { ContextChallengeDrill } from "./drills/context-drill";
 import { VerseMatchDrill } from "./drills/verse-match-drill";
+import { RearrangeDrillComponent } from "./drills/rearrange-drill";
 import { ArrowLeft, PlayCircle, RefreshCw, Sparkles } from "lucide-react";
 import { Drill, PracticeConfig } from "@/lib/types";
 import { generatePracticeDrillAction } from "@/app/actions/practice-drills";
@@ -22,7 +23,13 @@ export function PracticeFlow() {
 
   const generateNewDrill = useCallback(
     async (
-      type: typeof practiceDrillType,
+      type:
+        | "memorization"
+        | "context"
+        | "verse-match"
+        | "rearrange"
+        | "ai-themed"
+        | null,
       config: PracticeConfig | null | undefined,
     ) => {
       if (!type || type === "ai-themed") return;
@@ -176,6 +183,14 @@ export function PracticeFlow() {
               <VerseMatchDrill
                 drill={currentDrill}
                 onComplete={handleDrillComplete}
+                onShowResults={() => setIsTimerPaused(true)}
+                isAiGenerated={isAiGenerated}
+              />
+            )}
+            {currentDrill.type === "rearrange" && (
+              <RearrangeDrillComponent
+                drill={currentDrill}
+                onComplete={(score) => handleDrillComplete(score)}
                 onShowResults={() => setIsTimerPaused(true)}
                 isAiGenerated={isAiGenerated}
               />

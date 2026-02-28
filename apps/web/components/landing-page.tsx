@@ -92,6 +92,13 @@ export function LandingPage() {
                 </p>
               </div>
             ))}
+            <div className="w-full mt-8 flex items-center justify-center gap-2 text-muted-foreground font-bold bg-primary/5 py-3 px-6 rounded-full border-2 border-dashed border-primary/20">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <span>
+                Cloud Sync Active — Your progress is automatically saved to your
+                account.
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -222,7 +229,7 @@ export function LandingPage() {
               { icon: Flame, value: "300", label: "Max Daily Points" },
               { icon: Target, value: "3", label: "Drills Per Day" },
               { icon: Trophy, value: "∞", label: "Streak Potential" },
-              { icon: Users, value: "Groups", label: "Team Training" },
+              { icon: Sparkles, value: "Auto-Sync", label: "Data Never Lost" },
             ].map((stat) => (
               <div
                 key={stat.label}

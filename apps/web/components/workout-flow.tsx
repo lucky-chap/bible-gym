@@ -4,6 +4,7 @@ import { useWorkout } from "@/lib/store";
 import { MemorizationDrill } from "./drills/memorization-drill";
 import { ContextChallengeDrill } from "./drills/context-drill";
 import { VerseMatchDrill } from "./drills/verse-match-drill";
+import { RearrangeDrillComponent } from "./drills/rearrange-drill";
 import { ArrowLeft, Dumbbell } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -28,9 +29,14 @@ export function WorkoutFlow() {
   if (!workout) return null;
 
   const currentDrill = workout.drills[currentDrillIndex];
-  const progress = ((currentDrillIndex + 1) / 3) * 100;
+  const progress = ((currentDrillIndex + 1) / workout.drills.length) * 100;
 
-  const drillLabels = ["Memorization", "Context Challenge", "Verse Match"];
+  const drillLabels: Record<string, string> = {
+    memorization: "Memorization",
+    context: "Context Challenge",
+    "verse-match": "Verse Match",
+    rearrange: "Rearrange",
+  };
 
   const handleDrillComplete = (score: number) => {
     completeDrill(currentDrill.type, score);
@@ -58,9 +64,9 @@ export function WorkoutFlow() {
               Exit
             </button>
             <div className="flex items-center gap-2">
-              <Dumbbell className="w-4 h-4 text-[var(--primary)]" />
+              <Dumbbell className="w-4 h-4 text-primary" />
               <span className="text-sm font-bold text-foreground">
-                Drill {currentDrillIndex + 1}/3
+                Drill {currentDrillIndex + 1}/{workout.drills.length}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -71,7 +77,7 @@ export function WorkoutFlow() {
                 {formatTime(secondsElapsed)}
               </span>
               <span className="text-sm font-bold text-foreground hidden sm:inline">
-                {drillLabels[currentDrillIndex]}
+                {drillLabels[currentDrill.type]}
               </span>
             </div>
           </div>
@@ -106,6 +112,13 @@ export function WorkoutFlow() {
           <VerseMatchDrill
             drill={currentDrill}
             onComplete={handleDrillComplete}
+            onShowResults={() => setIsTimerPaused(true)}
+          />
+        )}
+        {currentDrill.type === "rearrange" && (
+          <RearrangeDrillComponent
+            drill={currentDrill}
+            onComplete={(score) => handleDrillComplete(score)}
             onShowResults={() => setIsTimerPaused(true)}
           />
         )}

@@ -85,7 +85,7 @@ export function AuthScreen() {
                   placeholder="you@example.com"
                   required
                   autoFocus
-                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-background border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all text-base font-medium"
+                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-background border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-primary transition-all text-base font-medium"
                 />
               </div>
 
@@ -122,7 +122,7 @@ export function AuthScreen() {
                   placeholder="Your name"
                   required
                   autoFocus
-                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-background border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all text-base font-medium"
+                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-background border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-primary transition-all text-base font-medium"
                 />
               </div>
 

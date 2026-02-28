@@ -38,6 +38,20 @@ export const BIBLE_PASSAGES: BiblePassage[] = [
     chapter: 40,
     verses: "31",
   },
+  {
+    reference: "Psalm 23:1-4",
+    text: "The Lord is my shepherd; I shall not want. He makes me to lie down in green pastures; He leads me beside the still waters. He restores my soul; He leads me in the paths of righteousness for His name's sake. Yea, though I walk through the valley of the shadow of death, I will fear no evil; for You are with me; Your rod and Your staff, they comfort me.",
+    book: "Psalm",
+    chapter: 23,
+    verses: "1-4",
+  },
+  {
+    reference: "Matthew 5:3-6",
+    text: "Blessed are the poor in spirit, for theirs is the kingdom of heaven. Blessed are those who mourn, for they will be comforted. Blessed are the meek, for they will inherit the earth. Blessed are those who hunger and thirst for righteousness, for they will be filled.",
+    book: "Matthew",
+    chapter: 5,
+    verses: "3-6",
+  },
 ];
 
 // ── 10 Context Questions ────────────────────────────────────

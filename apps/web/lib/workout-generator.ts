@@ -7,6 +7,7 @@ import {
   MemorizationDrill,
   ContextChallengeDrill,
   VerseMatchDrill,
+  RearrangeDrill,
   Workout,
 } from "./types";
 
@@ -110,6 +111,33 @@ export function generateVerseMatchDrill(): VerseMatchDrill {
   };
 }
 
+// Generate a rearrange drill
+export function generateRearrangeDrill(
+  passages: (typeof BIBLE_PASSAGES)[number][]
+): RearrangeDrill {
+  // Pick a passage with multiple sentences/verses
+  const multiVersePassages = passages.filter((p) => p.text.includes(".") || p.text.includes(";"));
+  const passage = multiVersePassages.length > 0
+    ? multiVersePassages[Math.floor(Math.random() * multiVersePassages.length)]
+    : passages[0];
+
+  // Split into units (sentences or verses)
+  const units = passage.text
+    .split(/(?<=[.;?])\s+/)
+    .filter((u) => u.trim().length > 0)
+    .map((text, index) => ({
+      id: `unit-${index}`,
+      text: text.trim(),
+      originalIndex: index,
+    }));
+
+  return {
+    type: "rearrange",
+    passage,
+    shuffledVerses: shuffleArray(units),
+  };
+}
+
 // Generate today's workout
 export function generateDailyWorkout(): Workout {
   const seed = getDaySeed();
@@ -126,12 +154,14 @@ export function generateDailyWorkout(): Workout {
       generateMemorizationDrill(selectedPassages),
       generateContextDrill(selectedPassages),
       generateVerseMatchDrill(),
+      generateRearrangeDrill(selectedPassages),
     ],
     completed: false,
     scores: {
       memorization: 0,
       context: 0,
       verseMatch: 0,
+      rearrange: 0,
     },
     totalScore: 0,
   };
@@ -196,6 +226,22 @@ export function scoreVerseMatchDrill(
       correct++;
     }
   }
+
+  return Math.round((correct / total) * 100);
+}
+// Score a rearrange drill
+export function scoreRearrangeDrill(
+  drill: RearrangeDrill,
+  currentOrder: { id: string; text: string; originalIndex: number }[]
+): number {
+  let correct = 0;
+  const total = drill.shuffledVerses.length;
+
+  currentOrder.forEach((item, index) => {
+    if (item.originalIndex === index) {
+      correct++;
+    }
+  });
 
   return Math.round((correct / total) * 100);
 }

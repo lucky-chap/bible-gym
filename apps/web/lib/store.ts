@@ -35,6 +35,7 @@ interface AppState {
     | "memorization"
     | "context"
     | "verse-match"
+    | "rearrange"
     | "ai-themed"
     | null;
   practiceConfig: PracticeConfig | null;
@@ -80,7 +81,7 @@ type Action =
   | { type: "JOIN_GROUP"; payload: Group }
   | { type: "SET_GROUP_MEMBERS"; payload: GroupMember[] }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "START_PRACTICE"; payload: { type: "memorization" | "context" | "verse-match" | "ai-themed", config?: PracticeConfig } }
+  | { type: "START_PRACTICE"; payload: { type: "memorization" | "context" | "verse-match" | "rearrange" | "ai-themed", config?: PracticeConfig } }
   | { type: "SET_GROUP_CHALLENGE"; payload: Workout }
   | { type: "DELETE_GROUP_CHALLENGE" }
   | {
@@ -129,13 +130,15 @@ function appReducer(state: AppState, action: Action): AppState {
         scores.context = action.payload.score;
       if (action.payload.drillType === "verse-match")
         scores.verseMatch = action.payload.score;
+      if (action.payload.drillType === "rearrange")
+        scores.rearrange = action.payload.score;
 
       return {
         ...state,
         workout: {
           ...state.workout,
           scores,
-          totalScore: scores.memorization + scores.context + scores.verseMatch,
+          totalScore: scores.memorization + scores.context + scores.verseMatch + (scores.rearrange || 0),
         },
       };
     }
@@ -376,7 +379,7 @@ export function useWorkout() {
   };
 
   const nextDrill = () => {
-    if (state.workout && state.currentDrillIndex < 2) {
+    if (state.workout && state.currentDrillIndex < state.workout.drills.length - 1) {
       dispatch({ type: "NEXT_DRILL" });
     } else {
       dispatch({ type: "COMPLETE_WORKOUT" });
@@ -399,7 +402,7 @@ export function usePractice() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const startPractice = (type: "memorization" | "context" | "verse-match" | "ai-themed", config?: PracticeConfig) => {
+  const startPractice = (type: "memorization" | "context" | "verse-match" | "rearrange" | "ai-themed", config?: PracticeConfig) => {
     dispatch({ type: "START_PRACTICE", payload: { type, config } });
     router.push("/practice");
   };

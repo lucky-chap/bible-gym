@@ -50,7 +50,7 @@ function buildBlanks(passage: BiblePassage, seed: number, index: number): Memori
 }
 
 function localFallback(
-  type: "memorization" | "context" | "verse-match" | "ai-themed" | null,
+  type: "memorization" | "context" | "verse-match" | "rearrange" | "ai-themed" | null,
 ): Drill {
   const seed = Date.now();
   if (type === "memorization") {
@@ -76,6 +76,19 @@ function localFallback(
         };
       }),
     };
+  } else if (type === "rearrange") {
+    const passages = shuffleArray(BIBLE_PASSAGES).filter(p => p.text.includes(".") || p.text.includes(";"));
+    const p = passages.length > 0 ? passages[0] : BIBLE_PASSAGES[0];
+    const units = p.text.split(/(?<=[.;?])\s+/).filter(u => u.length > 0).map((text, i) => ({
+      id: `fallback-rearrange-unit-${seed}-${i}`,
+      text: text.trim(),
+      originalIndex: i
+    }));
+    return {
+      type: "rearrange",
+      passage: p,
+      shuffledVerses: shuffleArray(units)
+    };
   } else {
     return {
       type: "verse-match",
@@ -87,7 +100,7 @@ function localFallback(
 // ━━ AI + Bible API path ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export async function generatePracticeDrillAction(
-  type: "memorization" | "context" | "verse-match",
+  type: "memorization" | "context" | "verse-match" | "rearrange",
   config: PracticeConfig,
 ): Promise<DrillResult> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -102,21 +115,24 @@ export async function generatePracticeDrillAction(
     const ai = new GoogleGenAI({ apiKey });
 
     let promptRequest: string;
+    const count = type === "rearrange" ? 1 : 3;
+    const length = type === "rearrange" ? "single longer passage (4-6 verses)" : "3 diverse passage references (1-3 verses each)";
+
     if (config.by === "book") {
-      promptRequest = `3 diverse passage references (1-3 verses each) from the book of ${config.value}`;
+      promptRequest = `${length} from the book of ${config.value}`;
     } else if (config.by === "chapter") {
-      promptRequest = `3 diverse passage references (1-3 verses each) from ${config.value}`;
+      promptRequest = `${length} from ${config.value}`;
     } else if (config.by === "theme") {
-      promptRequest = `3 diverse passage references (1-3 verses each) related to the theme: ${config.value}`;
+      promptRequest = `${length} related to the theme: ${config.value}`;
     } else {
-      promptRequest = `3 diverse passage references (1-3 verses each) from random books and chapters across the entire Bible`;
+      promptRequest = `${length} from random books and chapters across the entire Bible`;
     }
 
     let prompt = `
 You are an expert Bible teacher creating a practice drill.
 The user requested ${promptRequest}.
 
-Provide exactly 3 Bible passage references.
+Provide exactly ${count} Bible passage reference(s).
 Format the output STRICTLY as a JSON object matching this schema:
 {
   "passages": [
@@ -193,12 +209,29 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
         };
       });
       return { drill: { type: "context", questions }, isAiGenerated: true };
-    } else {
+    } else if (type === "verse-match") {
       const pairs = passagesWithText.map((p) => ({
         reference: p.reference,
         text: p.text,
       }));
       return { drill: { type: "verse-match", pairs }, isAiGenerated: true };
+    } else if (type === "rearrange") {
+      const p = passagesWithText[0];
+      const units = p.text.split(/(?<=[.;?])\s+/).filter(u => u.length > 0).map((text, i) => ({
+        id: `rearrange-unit-${seed}-${i}`,
+        text: text.trim(),
+        originalIndex: i
+      }));
+      return {
+        drill: {
+          type: "rearrange",
+          passage: p,
+          shuffledVerses: shuffleArray(units)
+        },
+        isAiGenerated: true
+      };
+    } else {
+      return { drill: { type: "verse-match", pairs: [] }, isAiGenerated: false };
     }
   } catch (e) {
     console.error("AI drill generation failed, using local fallback:", e);

@@ -62,7 +62,13 @@ export interface VerseMatchDrill {
   pairs: { reference: string; text: string }[];
 }
 
-export type Drill = MemorizationDrill | ContextChallengeDrill | VerseMatchDrill;
+export interface RearrangeDrill {
+  type: "rearrange";
+  passage: BiblePassage;
+  shuffledVerses: { id: string; text: string; originalIndex: number }[];
+}
+
+export type Drill = MemorizationDrill | ContextChallengeDrill | VerseMatchDrill | RearrangeDrill;
 
 export interface PracticeConfig {
   by: "book" | "chapter" | "theme" | "random";
@@ -83,12 +89,13 @@ export interface Workout {
     memorization: number;
     context: number;
     verseMatch: number;
+    rearrange: number;
   };
   totalScore: number;
 }
 
 export interface WorkoutResult {
-  drillType: "memorization" | "context" | "verse-match";
+  drillType: "memorization" | "context" | "verse-match" | "rearrange";
   score: number;
   maxScore: number;
   details: string;
