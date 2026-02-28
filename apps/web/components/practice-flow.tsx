@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { usePractice } from "@/lib/store";
 import { MemorizationDrill } from "./drills/memorization-drill";
 import { ContextChallengeDrill } from "./drills/context-drill";
 import { VerseMatchDrill } from "./drills/verse-match-drill";
-import { ArrowLeft, PlayCircle, RefreshCw } from "lucide-react";
-import {
-  generateMemorizationDrill,
-  generateContextDrill,
-  generateVerseMatchDrill,
-} from "@/lib/workout-generator";
-import { BIBLE_PASSAGES } from "@/lib/bible-data";
-import { Drill } from "@/lib/types";
+import { ArrowLeft, PlayCircle, RefreshCw, Sparkles } from "lucide-react";
+import { Drill, PracticeConfig } from "@/lib/types";
 import { generatePracticeDrillAction } from "@/app/actions/practice-drills";
 import { Loader2 } from "lucide-react";
 
@@ -22,56 +16,48 @@ export function PracticeFlow() {
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAiGenerated, setIsAiGenerated] = useState(false);
+  // Guard so localStorage re-hydration doesn't re-trigger generation mid-session
+  const hasGeneratedRef = useRef(false);
 
-  const generateNewDrill = async () => {
-    setIsGenerating(true);
-    setCurrentDrill(null); // Force unmount to reset state
+  const generateNewDrill = useCallback(
+    async (
+      type: typeof practiceDrillType,
+      config: PracticeConfig | null | undefined,
+    ) => {
+      if (!type || type === "ai-themed") return;
+      setIsGenerating(true);
+      setCurrentDrill(null);
+      setIsAiGenerated(false);
 
-    try {
-      if (
-        practiceConfig &&
-        practiceDrillType &&
-        practiceDrillType !== "ai-themed"
-      ) {
-        const drill = await generatePracticeDrillAction(
-          practiceDrillType,
-          practiceConfig,
+      try {
+        // Always attempt AI + Bible API — server action handles fallback internally
+        const result = await generatePracticeDrillAction(
+          type,
+          config ?? { by: "random", value: "" },
         );
         setSecondsElapsed(0);
         setIsTimerPaused(false);
-        setCurrentDrill(drill);
-      } else {
-        // Fallback to local random passages
-        const randomPassages = [...BIBLE_PASSAGES]
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3);
-
-        let drill: Drill;
-        if (practiceDrillType === "memorization") {
-          drill = generateMemorizationDrill(randomPassages);
-        } else if (practiceDrillType === "context") {
-          drill = generateContextDrill(randomPassages);
-        } else {
-          drill = generateVerseMatchDrill();
-        }
-
-        setSecondsElapsed(0);
-        setIsTimerPaused(false);
-        setCurrentDrill(drill);
+        setCurrentDrill(result.drill);
+        setIsAiGenerated(result.isAiGenerated);
+      } catch (e) {
+        console.error("Failed to generate drill", e);
+      } finally {
+        setIsGenerating(false);
       }
-    } catch (e) {
-      console.error("Failed to generate drill", e);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!practiceDrillType) {
       exitPractice();
       return;
     }
-    generateNewDrill();
+    // Only generate once — prevent localStorage re-hydration from re-triggering
+    if (hasGeneratedRef.current) return;
+    hasGeneratedRef.current = true;
+    generateNewDrill(practiceDrillType, practiceConfig);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [practiceDrillType]);
 
@@ -87,18 +73,14 @@ export function PracticeFlow() {
 
   if (!practiceDrillType) return null;
 
-  const drillLabels = {
-    memorization: "Memorization Practice",
-    context: "Context Challenge Practice",
-    "verse-match": "Verse Match Practice",
+  const handleDrillComplete = (_score: number) => {
+    hasGeneratedRef.current = true; // allow next generation
+    generateNewDrill(practiceDrillType, practiceConfig);
   };
 
-  const handleDrillComplete = (score: number) => {
-    // In practice mode, we just show them how they did, no state saving needed
-    // The drill component handles showing its result screen.
-    // They can click "Next Drill ->" which is wired to this callback.
-    // So here we just generate a new practice drill.
-    generateNewDrill();
+  const handleSkip = () => {
+    hasGeneratedRef.current = true;
+    generateNewDrill(practiceDrillType, practiceConfig);
   };
 
   const formatTime = (seconds: number) => {
@@ -121,10 +103,15 @@ export function PracticeFlow() {
               Exit Practice
             </button>
             <div className="flex items-center gap-2">
-              <PlayCircle className="w-4 h-4 text-[var(--primary)]" />
+              <PlayCircle className="w-4 h-4 text-primary" />
               <span className="text-sm font-bold text-foreground">
                 Infinite Practice
               </span>
+              {isAiGenerated && (
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                  <Sparkles className="w-2.5 h-2.5" /> AI
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span
@@ -134,7 +121,7 @@ export function PracticeFlow() {
                 {formatTime(secondsElapsed)}
               </span>
               <button
-                onClick={generateNewDrill}
+                onClick={handleSkip}
                 className="hidden sm:flex items-center gap-1.5 text-sm font-bold text-white bg-foreground hover:bg-primary px-3 py-1.5 rounded-full border-2 border-foreground transition-colors"
                 style={{ boxShadow: "2px 2px 0px 0px var(--primary)" }}
               >
@@ -158,8 +145,12 @@ export function PracticeFlow() {
             </div>
             <div className="text-foreground font-bold">
               {practiceConfig
-                ? `Preparing ${practiceConfig.by} drill...`
-                : "Preparing drill..."}
+                ? `Preparing ${practiceConfig.by === "random" ? "random" : practiceConfig.by} drill with AI...`
+                : "Preparing drill with AI..."}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold">
+              <Sparkles className="w-3 h-3 text-[#8B5CF6]" />
+              Powered by Gemini + Bible API
             </div>
           </div>
         ) : currentDrill ? (
@@ -169,6 +160,8 @@ export function PracticeFlow() {
                 drill={currentDrill}
                 onComplete={handleDrillComplete}
                 onShowResults={() => setIsTimerPaused(true)}
+                method={practiceConfig?.method}
+                isAiGenerated={isAiGenerated}
               />
             )}
             {currentDrill.type === "context" && (
@@ -176,6 +169,7 @@ export function PracticeFlow() {
                 drill={currentDrill}
                 onComplete={handleDrillComplete}
                 onShowResults={() => setIsTimerPaused(true)}
+                isAiGenerated={isAiGenerated}
               />
             )}
             {currentDrill.type === "verse-match" && (
@@ -183,6 +177,7 @@ export function PracticeFlow() {
                 drill={currentDrill}
                 onComplete={handleDrillComplete}
                 onShowResults={() => setIsTimerPaused(true)}
+                isAiGenerated={isAiGenerated}
               />
             )}
           </>

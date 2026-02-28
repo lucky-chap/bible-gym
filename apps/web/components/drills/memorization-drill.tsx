@@ -3,15 +3,29 @@
 import { useState, useRef, useEffect } from "react";
 import { MemorizationDrill as MemDrillType } from "@/lib/types";
 import { scoreMemorizationDrill } from "@/lib/workout-generator";
-import { BookOpen, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
 interface Props {
   drill: MemDrillType;
   onComplete: (score: number) => void;
   onShowResults?: () => void;
+  method?: "blanks" | "first-letter";
+  isAiGenerated?: boolean;
 }
 
-export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
+export function MemorizationDrill({
+  drill,
+  onComplete,
+  onShowResults,
+  method = "blanks",
+  isAiGenerated = false,
+}: Props) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<
     Record<string, Record<number, string>>
@@ -26,6 +40,26 @@ export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
   const blankedIndices = new Set(
     currentQuestion.blankedWords.map((b) => b.index),
   );
+
+  const formatWord = (word: string) => {
+    if (method !== "first-letter") return word;
+    const cleanWord = word.replace(/[^a-zA-Z]/g, "");
+    if (cleanWord.length <= 1) return word;
+
+    const firstLetterMatch = word.match(/[a-zA-Z]/);
+    if (!firstLetterMatch) return word;
+
+    const firstCharIndex = word.indexOf(firstLetterMatch[0]);
+    const firstLetter = word.charAt(firstCharIndex);
+    const leadingPunctuation = word.substring(0, firstCharIndex);
+
+    const trailingPunctuationMatch = word.match(/[^a-zA-Z]+$/);
+    const trailingPunctuation = trailingPunctuationMatch
+      ? trailingPunctuationMatch[0]
+      : "";
+
+    return leadingPunctuation + firstLetter + "_" + trailingPunctuation;
+  };
 
   useEffect(() => {
     // Auto-focus first blank
@@ -137,7 +171,7 @@ export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
               className="p-4 rounded-xl bg-card border-2 border-foreground"
               style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
             >
-              <div className="text-xs text-[var(--primary)] font-black mb-2">
+              <div className="text-xs text-primary font-black mb-2">
                 {q.passage.reference}
               </div>
               <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 text-sm leading-relaxed">
@@ -170,7 +204,7 @@ export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
                   }
                   return (
                     <span key={i} className="text-muted-foreground">
-                      {word}
+                      {formatWord(word)}
                     </span>
                   );
                 })}
@@ -205,9 +239,16 @@ export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
             <BookOpen className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">
-              Memorization Drill
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-foreground">
+                Memorization Drill
+              </h2>
+              {isAiGenerated && (
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                  <Sparkles className="w-2.5 h-2.5" /> AI
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground font-medium">
               Passage {currentQuestionIndex + 1} of {drill.questions.length}
             </p>
@@ -220,7 +261,7 @@ export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
         className="rounded-2xl bg-card border-2 border-foreground p-6 md:p-8"
         style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
       >
-        <div className="text-sm font-black text-[var(--primary)] mb-4">
+        <div className="text-sm font-black text-primary mb-4">
           {currentQuestion.passage.reference}
         </div>
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-3 text-lg leading-relaxed">
@@ -237,15 +278,17 @@ export function MemorizationDrill({ drill, onComplete, onShowResults }: Props) {
                     value={currentQAnswers[i] || ""}
                     onChange={(e) => updateAnswer(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, i)}
-                    className="w-28 md:w-32 px-3 py-1.5 rounded-lg text-base font-bold text-center transition-all bg-background border-2 border-foreground text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none"
-                    placeholder="___"
+                    className="w-28 md:w-32 px-3 py-1.5 rounded-lg text-base font-bold text-center transition-all bg-background border-2 border-foreground text-foreground focus:ring-2 focus:ring-primary outline-none"
+                    placeholder={
+                      method === "first-letter" ? formatWord(word) : "___"
+                    }
                   />
                 </span>
               );
             }
             return (
               <span key={i} className="text-foreground">
-                {word}
+                {formatWord(word)}
               </span>
             );
           })}

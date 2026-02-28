@@ -3,18 +3,26 @@
 import { useState } from "react";
 import { ContextChallengeDrill as ContextDrillType } from "@/lib/types";
 import { scoreContextDrill } from "@/lib/workout-generator";
-import { Target, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import {
+  Target,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
 interface Props {
   drill: ContextDrillType;
   onComplete: (score: number) => void;
   onShowResults?: () => void;
+  isAiGenerated?: boolean;
 }
 
 export function ContextChallengeDrill({
   drill,
   onComplete,
   onShowResults,
+  isAiGenerated = false,
 }: Props) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedIndices, setSelectedIndices] = useState<
@@ -93,7 +101,7 @@ export function ContextChallengeDrill({
                 className="p-4 rounded-xl bg-card border-2 border-foreground"
                 style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
               >
-                <div className="text-xs text-[var(--primary)] font-black mb-2">
+                <div className="text-xs text-primary font-black mb-2">
                   Question {idx + 1} • {q.passage.reference}
                 </div>
                 <div className="text-sm text-foreground mb-3 font-medium">
@@ -163,9 +171,16 @@ export function ContextChallengeDrill({
             <Target className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">
-              Context Challenge
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-foreground">
+                Context Challenge
+              </h2>
+              {isAiGenerated && (
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                  <Sparkles className="w-2.5 h-2.5" /> AI
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground font-medium">
               Question {currentQuestionIndex + 1} of {drill.questions.length}
             </p>
@@ -178,7 +193,7 @@ export function ContextChallengeDrill({
         className="rounded-2xl bg-card border-2 border-foreground p-6"
         style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
       >
-        <div className="text-sm font-black text-[var(--primary)] mb-3">
+        <div className="text-sm font-black text-primary mb-3">
           {currentQuestion.passage.reference}
         </div>
         <p className="text-foreground leading-relaxed  font-medium">
@@ -234,7 +249,9 @@ export function ContextChallengeDrill({
         }`}
         style={{
           boxShadow:
-            currentSelection === undefined ? "none" : "4px 4px 0px 0px var(--foreground)",
+            currentSelection === undefined
+              ? "none"
+              : "4px 4px 0px 0px var(--foreground)",
         }}
       >
         {isFinalQuestion ? "Submit Answers" : "Next Question"}

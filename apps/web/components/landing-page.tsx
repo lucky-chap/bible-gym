@@ -23,7 +23,7 @@ export function LandingPage() {
       {/* ===================== HERO ===================== */}
       <header className="bg-background py-20 md:py-28 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-[var(--primary)] leading-[1.05] tracking-tight mb-6 ">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-primary leading-[1.05] tracking-tight mb-6 ">
             Train Your Spirit.
           </h1>
           <p className="text-lg md:text-xl text-foreground font-medium max-w-2xl mx-auto mb-10">
@@ -72,8 +72,11 @@ export function LandingPage() {
             ].map((card) => (
               <div
                 key={card.label}
-                className="bg-card rounded-2xl border-2 border-foreground p-5 w-56 text-left hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default"
-                style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+                className="rounded-2xl border-2 border-foreground p-5 w-56 text-left hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default"
+                style={{
+                  boxShadow: "4px 4px 0px 0px var(--foreground)",
+                  backgroundColor: `${card.color}10`,
+                }}
               >
                 <div
                   className="w-10 h-10 rounded-lg border-2 border-foreground flex items-center justify-center mb-3"
@@ -195,7 +198,7 @@ export function LandingPage() {
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
-                      className="w-5 h-5 fill-[var(--foreground)] text-foreground"
+                      className="w-5 h-5 fill-foreground text-foreground"
                     />
                   ))}
                 </div>

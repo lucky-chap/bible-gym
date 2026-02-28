@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useAppState,
-  useAppDispatch,
-  useWorkout,
-  usePractice,
-} from "@/lib/store";
+import { useAppState, useWorkout, useMastery } from "@/lib/store";
 import {
   Flame,
   Trophy,
@@ -14,12 +9,12 @@ import {
   ChevronRight,
   Calendar,
   Target,
-  LogOut,
   Zap,
   Crown,
   PlayCircle,
   Sparkles,
   Loader2,
+  BookOpen,
 } from "lucide-react";
 import {
   generateRandomAIDrill,
@@ -27,20 +22,17 @@ import {
 } from "@/app/actions/generate-drills";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { VerseSelector } from "./mastery/verse-selector";
 
 export function Dashboard() {
   const state = useAppState();
-  const dispatch = useAppDispatch();
   const { startWorkout, startGroupChallenge } = useWorkout();
-  const { startPractice } = usePractice();
+  const { masteryStats } = useMastery();
   const user = state.user;
   const [isStartingDaily, setIsStartingDaily] = useState(false);
   const [aiTheme, setAiTheme] = useState("");
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
-  const [practiceConfigType, setPracticeConfigType] = useState<
-    "theme" | "book" | "chapter" | "random"
-  >("random");
-  const [practiceConfigValue, setPracticeConfigValue] = useState("");
+  const [showMasterySelector, setShowMasterySelector] = useState(false);
   const router = useRouter();
 
   if (!user) return null;
@@ -54,387 +46,439 @@ export function Dashboard() {
 
   return (
     <div className="w-full">
-      <main className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-        {/* Greeting */}
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-foreground">
-            Welcome back,{" "}
-            <span className="text-[var(--primary)] ">{user.name.split(" ")[0]}</span>
-          </h1>
-          <p className="text-muted-foreground mt-1 font-medium">
-            {hasCompletedToday
-              ? "Great work today! Come back tomorrow for your next session."
-              : "Your daily workout is ready. Let's train."}
-          </p>
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        {/* Top Section: Greeting & Quick Stats Summary */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black text-foreground">
+              Welcome back,{" "}
+              <span className="text-primary">{user.name.split(" ")[0]}</span>
+            </h1>
+            <p className="text-muted-foreground mt-1 font-medium text-lg">
+              {hasCompletedToday
+                ? "Great work today! Come back tomorrow for your next session."
+                : "Your daily workout is ready. Let's train."}
+            </p>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-4">
+            <div
+              className="flex flex-col items-center px-4 py-2 bg-card border-2 border-foreground rounded-xl"
+              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+            >
+              <span className="text-xs font-black text-muted-foreground uppercase">
+                Streak
+              </span>
+              <div className="flex items-center gap-1">
+                <Flame className="w-4 h-4 text-primary fill-primary" />
+                <span className="text-xl font-black">{user.streak}</span>
+              </div>
+            </div>
+            <div
+              className="flex flex-col items-center px-4 py-2 bg-card border-2 border-foreground rounded-xl"
+              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+            >
+              <span className="text-xs font-black text-muted-foreground uppercase">
+                Points
+              </span>
+              <div className="flex items-center gap-1">
+                <Trophy className="w-4 h-4 text-[#F59E0B]" />
+                <span className="text-xl font-black">
+                  {user.totalScore.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Start Workout CTA */}
-        <button
-          onClick={async () => {
-            if (!hasCompletedToday) {
-              setIsStartingDaily(true);
-              try {
-                const aiDrill = await generateRandomAIDrill();
-                await startWorkout(aiDrill);
-              } catch (error) {
-                console.error("Failed to start daily workout with AI:", error);
-                await startWorkout(); // Fallback to normal
-              } finally {
-                setIsStartingDaily(false);
-              }
-            }
-          }}
-          disabled={hasCompletedToday || isStartingDaily}
-          className={`group w-full relative overflow-hidden rounded-2xl border-2 border-foreground p-8 text-left transition-all duration-300 ${
-            hasCompletedToday
-              ? "bg-[#D1FAE5] cursor-default"
-              : "bg-card hover:translate-x-[-2px] hover:translate-y-[-2px] cursor-pointer"
-          }`}
-          style={{
-            boxShadow: hasCompletedToday
-              ? "4px 4px 0px 0px #10B981"
-              : "4px 4px 0px 0px var(--foreground)",
-          }}
-        >
-          <div className="relative flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                {hasCompletedToday ? (
-                  <div
-                    className="px-3 py-1 rounded-full bg-[#10B981] text-white text-xs font-bold border-2 border-foreground"
-                    style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                  >
-                    ✓ Completed
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Start Workout CTA */}
+            <button
+              onClick={async () => {
+                if (!hasCompletedToday) {
+                  setIsStartingDaily(true);
+                  try {
+                    const aiDrill = await generateRandomAIDrill();
+                    await startWorkout(aiDrill);
+                  } catch (error) {
+                    console.error(
+                      "Failed to start daily workout with AI:",
+                      error,
+                    );
+                    await startWorkout(); // Fallback to normal
+                  } finally {
+                    setIsStartingDaily(false);
+                  }
+                }
+              }}
+              disabled={hasCompletedToday || isStartingDaily}
+              className={`group w-full relative overflow-hidden rounded-3xl border-2 border-foreground p-8 md:p-10 text-left transition-all duration-300 ${
+                hasCompletedToday
+                  ? "bg-[#D1FAE5] cursor-default"
+                  : "bg-card hover:bg-primary/5 hover:translate-x-[-4px] hover:translate-y-[-4px] cursor-pointer"
+              }`}
+              style={{
+                boxShadow: hasCompletedToday
+                  ? "4px 4px 0px 0px #10B981"
+                  : "8px 8px 0px 0px var(--foreground)",
+              }}
+            >
+              <div className="relative flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {hasCompletedToday ? (
+                      <div
+                        className="px-3 py-1 rounded-full bg-[#10B981] text-white text-xs font-bold border-2 border-foreground"
+                        style={{
+                          boxShadow: "2px 2px 0px 0px var(--foreground)",
+                        }}
+                      >
+                        ✓ MISSION ACCOMPLISHED
+                      </div>
+                    ) : (
+                      <div
+                        className="px-3 py-1 rounded-full bg-primary text-white text-xs font-bold border-2 border-foreground animate-pulse"
+                        style={{
+                          boxShadow: "2px 2px 0px 0px var(--foreground)",
+                        }}
+                      >
+                        DAILY CHALLENGE
+                      </div>
+                    )}
                   </div>
-                ) : (
+                  <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight">
+                    {hasCompletedToday
+                      ? "Rest Day in Progress"
+                      : "Master Your Verse\nof the Day"}
+                  </h2>
+                  <p className="text-muted-foreground text-lg font-bold">
+                    {hasCompletedToday
+                      ? "You've earned your points. See you at sunrise."
+                      : "3 intense drills · ~5 min session · 300 pts potential"}
+                  </p>
+                </div>
+                {!hasCompletedToday && (
                   <div
-                    className="px-3 py-1 rounded-full bg-primary text-white text-xs font-bold border-2 border-foreground animate-pulse"
-                    style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-3xl bg-primary border-2 border-foreground flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ml-4"
+                    style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
                   >
-                    Ready
+                    {isStartingDaily ? (
+                      <Loader2 className="w-10 h-10 text-white animate-spin" />
+                    ) : (
+                      <PlayCircle className="w-10 h-10 text-white fill-white/20" />
+                    )}
                   </div>
                 )}
               </div>
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-                {hasCompletedToday
-                  ? "Today's Workout Complete"
-                  : "Start Today's Workout"}
-              </h2>
-              <p className="text-muted-foreground text-sm font-medium">
-                {hasCompletedToday
-                  ? "You've earned your rest. See you tomorrow."
-                  : "3 drills · ~5 min · 300 pts max"}
+            </button>
+
+            {/* Workout Breakdown Preview */}
+            <div
+              className="rounded-3xl bg-card border-2 border-foreground p-8"
+              style={{ boxShadow: "6px 6px 0px 0px var(--primary)" }}
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xl font-black text-foreground">
+                    Elite Training
+                  </h3>
+                  <p className="text-muted-foreground font-bold">
+                    Choose your specialized focus
+                  </p>
+                </div>
+                <span
+                  className="text-sm text-white font-black bg-primary px-4 py-1.5 rounded-full border-2 border-foreground"
+                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                >
+                  UNLIMITED
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                {/* AI Generator Option */}
+                <div
+                  className="rounded-2xl bg-[#EFF6FF] border-2 border-foreground p-6 transition-all hover:bg-[#DBEAFE]"
+                  style={{ boxShadow: "4px 4px 0px 0px #3B82F6" }}
+                >
+                  <div className="flex items-center gap-4 mb-6">
+                    <div
+                      className="w-14 h-14 rounded-2xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center shrink-0"
+                      style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                    >
+                      <Sparkles className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-foreground">
+                        AI Theme Forge
+                      </div>
+                      <div className="text-sm font-bold text-muted-foreground">
+                        Create a custom drill set for any topic or emotional
+                        state
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={aiTheme}
+                        onChange={(e) => setAiTheme(e.target.value)}
+                        placeholder="Theme (e.g. Anxiety, Courage, Joy)"
+                        className="w-full pl-10 pr-4 py-3 text-base rounded-xl bg-card border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-4 focus:ring-[#3B82F6]/20 transition-all font-bold"
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!aiTheme.trim() || isGeneratingPractice) return;
+                        setIsGeneratingPractice(true);
+                        try {
+                          const workout = await generateThemedWorkout(
+                            aiTheme.trim(),
+                          );
+                          startGroupChallenge(workout);
+                          setAiTheme("");
+                        } catch (error) {
+                          console.error("AI Generation failed:", error);
+                        } finally {
+                          setIsGeneratingPractice(false);
+                        }
+                      }}
+                      disabled={!aiTheme.trim() || isGeneratingPractice}
+                      className="px-8 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white font-black rounded-xl transition-all flex items-center gap-2 border-2 border-foreground active:translate-y-0 translate-y-[-2px]"
+                      style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                    >
+                      {isGeneratingPractice ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <PlayCircle className="w-5 h-5" />
+                      )}
+                      Forge
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      icon: BookOpen,
+                      name: "Mastery",
+                      desc: "Step-by-step",
+                      color: "#8B5CF6",
+                      onClick: () => setShowMasterySelector(true),
+                    },
+                    {
+                      icon: Dumbbell,
+                      name: "Memorization",
+                      desc: "Fill blanks",
+                      color: "#3B82F6",
+                      type: "memorization" as const,
+                      onClick: () => router.push("/practice/memorization"),
+                    },
+                    {
+                      icon: Target,
+                      name: "Context",
+                      desc: "Deep study",
+                      color: "#F59E0B",
+                      type: "context" as const,
+                      onClick: () => router.push("/practice/context"),
+                    },
+                    {
+                      icon: Zap,
+                      name: "Match",
+                      desc: "Quick reflex",
+                      color: "#10B981",
+                      type: "verse-match" as const,
+                      onClick: () => router.push("/practice/verse-match"),
+                    },
+                  ].map((drill) => (
+                    <button
+                      key={drill.name}
+                      onClick={drill.onClick}
+                      className={`flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-foreground hover:translate-y-[-4px] transition-all group text-center`}
+                      style={{
+                        boxShadow: "4px 4px 0px 0px var(--foreground)",
+                        backgroundColor: `${drill.color}10`, // 10% opacity hex
+                      }}
+                    >
+                      <div
+                        className="w-14 h-14 rounded-2xl border-2 border-foreground flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
+                        style={{
+                          backgroundColor: drill.color,
+                          boxShadow: "3px 3px 0px 0px var(--foreground)",
+                        }}
+                      >
+                        <drill.icon className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="font-black text-foreground">
+                        {drill.name}
+                      </div>
+                      <div className="text-xs font-bold text-muted-foreground mt-1 uppercase">
+                        {drill.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {showMasterySelector && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-4 border-foreground rounded-3xl p-8 md:p-12 shadow-[12px 12px 0px 0px_rgba(0,0,0,1)]">
+                      <button
+                        onClick={() => setShowMasterySelector(false)}
+                        className="absolute top-6 right-6 p-2 rounded-xl bg-muted border-2 border-foreground hover:translate-y-[-2px] transition-all"
+                      >
+                        <ChevronRight className="w-6 h-6 rotate-90" />
+                      </button>
+                      <VerseSelector />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Column */}
+          <div className="space-y-8">
+            {/* Stats Vertical Grid */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-2">
+                Your Progress
+              </h3>
+
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+                <div
+                  className="rounded-2xl bg-[#FFF1F2] border-2 border-foreground p-5 flex items-center gap-4 hover:translate-x-1 hover:bg-[#FFE4E6] transition-all"
+                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                >
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-primary border-2 border-foreground flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Flame className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-foreground leading-none">
+                      {user.streak}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
+                      Day Streak
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl bg-[#F5F3FF] border-2 border-foreground p-5 flex items-center gap-4 hover:translate-x-1 hover:bg-[#EDE9FE] transition-all"
+                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                >
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-[#8B5CF6] border-2 border-foreground flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Flame className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-foreground leading-none">
+                      {masteryStats.streak}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
+                      Mastery Streak
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl bg-[#FFFBEB] border-2 border-foreground p-5 flex items-center gap-4 hover:translate-x-1 hover:bg-[#FEF3C7] transition-all"
+                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                >
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-[#F59E0B] border-2 border-foreground flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-foreground leading-none">
+                      {masteryStats.totalMastered}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
+                      Verses Mastered
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl bg-[#ECFEFF] border-2 border-foreground p-5 flex items-center gap-4 hover:translate-x-1 hover:bg-[#CFFAFE] transition-all"
+                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                >
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-[#0891B2] border-2 border-foreground flex items-center justify-center font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    {masteryStats.consistencyScore}%
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-end mb-1">
+                      <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
+                        Consistency Score
+                      </div>
+                    </div>
+                    <div className="h-2 w-full bg-white/50 rounded-full overflow-hidden border border-foreground/20">
+                      <div
+                        className="h-full bg-[#0891B2] transition-all duration-500"
+                        style={{ width: `${masteryStats.consistencyScore}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest pl-2">
+                Social & History
+              </h3>
+
+              <div className="space-y-4">
+                <button
+                  onClick={() => router.push("/group")}
+                  className="w-full flex items-center gap-4 rounded-2xl bg-[#F5F3FF] border-2 border-foreground p-5 hover:translate-x-1 hover:bg-[#EDE9FE] transition-all text-left group"
+                  style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-[#8B5CF6] border-2 border-foreground flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-black text-foreground truncate">
+                      Training Groups
+                    </div>
+                    <div className="text-xs font-bold text-muted-foreground truncate">
+                      {user.groupId ? "Leaderboard & Stats" : "Find Your Squad"}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-all" />
+                </button>
+
+                <div
+                  className="w-full flex items-center gap-4 rounded-2xl bg-[#F0FDF4] border-2 border-foreground p-5 transition-all text-left"
+                  style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-[#10B981] border-2 border-foreground flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-black text-foreground truncate">
+                      Activity Log
+                    </div>
+                    <div className="text-xs font-bold text-muted-foreground truncate">
+                      {user.lastWorkoutDate
+                        ? `Last: ${new Date(user.lastWorkoutDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`
+                        : "No activity yet"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Promo/Tip Box */}
+            <div className="rounded-3xl bg-primary/10 border-2 border-dashed border-primary p-6 text-center">
+              <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+              <h4 className="font-black text-foreground mb-1">Did you know?</h4>
+              <p className="text-xs font-bold text-muted-foreground">
+                Training with a group increases your consistency by 40%. Join a
+                squad today!
               </p>
             </div>
-            {!hasCompletedToday && (
-              <div
-                className="w-14 h-14 rounded-2xl bg-primary border-2 border-foreground flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-              >
-                {isStartingDaily ? (
-                  <Loader2 className="w-7 h-7 text-white animate-spin" />
-                ) : (
-                  <ChevronRight className="w-7 h-7 text-white" />
-                )}
-              </div>
-            )}
-          </div>
-        </button>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-4">
-          <div
-            className="rounded-2xl bg-card border-2 border-foreground p-5 text-center hover:translate-y-[-2px] transition-all"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl bg-primary border-2 border-foreground flex items-center justify-center mx-auto mb-3"
-              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-            >
-              <Flame className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-2xl font-black text-foreground">
-              {user.streak}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1 font-bold">
-              Day Streak
-            </div>
-          </div>
-
-          <div
-            className="rounded-2xl bg-card border-2 border-foreground p-5 text-center hover:translate-y-[-2px] transition-all"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl bg-[#F59E0B] border-2 border-foreground flex items-center justify-center mx-auto mb-3"
-              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-            >
-              <Trophy className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-2xl font-black text-foreground">
-              {user.totalScore.toLocaleString()}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1 font-bold">
-              Total Points
-            </div>
-          </div>
-
-          <div
-            className="rounded-2xl bg-card border-2 border-foreground p-5 text-center hover:translate-y-[-2px] transition-all"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center mx-auto mb-3"
-              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-            >
-              {user.groupId ? (
-                <Crown className="w-5 h-5 text-white" />
-              ) : (
-                <Users className="w-5 h-5 text-white" />
-              )}
-            </div>
-            <div className="text-2xl font-black text-foreground">
-              {user.groupId
-                ? userGroupRank >= 0
-                  ? `#${userGroupRank + 1}`
-                  : "-"
-                : "-"}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1 font-bold">
-              {user.groupId ? "Group Rank" : "No Group"}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-            Quick Actions
-          </h3>
-
-          <button
-            onClick={() => router.push("/group")}
-            className="w-full flex items-center gap-4 rounded-2xl bg-card border-2 border-foreground p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all text-left group"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-          >
-            <div
-              className="w-12 h-12 rounded-xl bg-[#8B5CF6] border-2 border-foreground flex items-center justify-center group-hover:scale-110 transition-transform"
-              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-            >
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-foreground">Training Groups</div>
-              <div className="text-sm text-muted-foreground">
-                {user.groupId
-                  ? "View your group leaderboard"
-                  : "Join or create a group"}
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          </button>
-
-          <div
-            className="flex items-center gap-4 rounded-2xl bg-card border-2 border-foreground p-5"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-          >
-            <div
-              className="w-12 h-12 rounded-xl bg-[#10B981] border-2 border-foreground flex items-center justify-center"
-              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-            >
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-foreground">Training History</div>
-              <div className="text-sm text-muted-foreground">
-                {user.lastWorkoutDate
-                  ? `Last trained: ${new Date(user.lastWorkoutDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`
-                  : "No sessions yet"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Workout Breakdown Preview */}
-        <div
-          className="rounded-2xl bg-card border-2 border-foreground p-6"
-          style={{ boxShadow: "4px 4px 0px 0px var(--primary)" }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-foreground">Quick Training</h3>
-            <span
-              className="text-xs text-white font-bold bg-primary px-3 py-1 rounded-full border-2 border-foreground"
-              style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-            >
-              Unlimited
-            </span>
-          </div>
-          <div className="space-y-4">
-            {/* AI Generator Option */}
-            <div
-              className="rounded-2xl bg-background border-2 border-foreground p-4"
-              style={{ boxShadow: "3px 3px 0px 0px #3B82F6" }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-10 h-10 rounded-xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                >
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">
-                    AI Theme Generator
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Custom workout by theme
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={aiTheme}
-                  onChange={(e) => setAiTheme(e.target.value)}
-                  placeholder="Theme (e.g. Love, Hope)"
-                  className="flex-1 px-3 py-2 text-sm rounded-lg bg-card border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition-colors font-medium"
-                />
-                <button
-                  onClick={async () => {
-                    if (!aiTheme.trim() || isGeneratingPractice) return;
-                    setIsGeneratingPractice(true);
-                    try {
-                      const workout = await generateThemedWorkout(
-                        aiTheme.trim(),
-                      );
-                      startGroupChallenge(workout);
-                      setAiTheme("");
-                    } catch (error) {
-                      console.error("AI Generation failed:", error);
-                    } finally {
-                      setIsGeneratingPractice(false);
-                    }
-                  }}
-                  disabled={!aiTheme.trim() || isGeneratingPractice}
-                  className="px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-all flex items-center gap-2 border-2 border-foreground"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                >
-                  {isGeneratingPractice ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <PlayCircle className="w-3.5 h-3.5" />
-                  )}
-                  Start
-                </button>
-              </div>
-            </div>
-
-            <div className="h-px bg-foreground/10" />
-
-            {/* Practice Options Section */}
-            <div>
-              <div className="text-sm font-bold text-foreground mb-2">
-                Practice Options:
-              </div>
-              <div className="flex gap-2 mb-4 flex-col sm:flex-row">
-                <select
-                  value={practiceConfigType}
-                  onChange={(e) =>
-                    setPracticeConfigType(
-                      e.target.value as "theme" | "book" | "chapter" | "random",
-                    )
-                  }
-                  className="px-3 py-2 text-sm rounded-lg bg-background border-2 border-foreground text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors sm:w-1/3"
-                >
-                  <option value="random">Random Verses</option>
-                  <option value="book">By Book</option>
-                  <option value="chapter">By Chapter</option>
-                  <option value="theme">By Theme</option>
-                </select>
-                {practiceConfigType !== "random" && (
-                  <input
-                    type="text"
-                    value={practiceConfigValue}
-                    onChange={(e) => setPracticeConfigValue(e.target.value)}
-                    placeholder={
-                      practiceConfigType === "book"
-                        ? "e.g., Romans"
-                        : practiceConfigType === "chapter"
-                          ? "e.g., Romans 8"
-                          : "e.g., Forgiveness"
-                    }
-                    className="flex-1 px-3 py-2 text-sm rounded-lg bg-card border-2 border-foreground text-foreground placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors font-medium"
-                  />
-                )}
-              </div>
-            </div>
-
-            {[
-              {
-                icon: Dumbbell,
-                name: "Memorization",
-                desc: "Fill in missing words",
-                color: "#3B82F6",
-                type: "memorization" as const,
-              },
-              {
-                icon: Target,
-                name: "Context Challenge",
-                desc: "Multiple choice questions",
-                color: "#F59E0B",
-                type: "context" as const,
-              },
-              {
-                icon: Zap,
-                name: "Verse Match",
-                desc: "Match reference to text",
-                color: "#10B981",
-                type: "verse-match" as const,
-              },
-            ].map((drill) => (
-              <div
-                key={drill.name}
-                className="flex items-center gap-3 p-3 rounded-xl bg-background border-2 border-foreground"
-                style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-              >
-                <div
-                  className="w-10 h-10 rounded-lg border-2 border-foreground flex items-center justify-center"
-                  style={{
-                    backgroundColor: drill.color,
-                    boxShadow: "2px 2px 0px 0px var(--foreground)",
-                  }}
-                >
-                  <drill.icon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-foreground">
-                    {drill.name}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{drill.desc}</div>
-                </div>
-                <button
-                  onClick={() => {
-                    const config =
-                      practiceConfigType === "random" ||
-                      !practiceConfigValue.trim()
-                        ? undefined
-                        : {
-                            by: practiceConfigType as
-                              | "theme"
-                              | "book"
-                              | "chapter",
-                            value: practiceConfigValue,
-                          };
-                    startPractice(drill.type, config);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card hover:bg-primary hover:text-white text-xs font-bold text-foreground transition-colors border-2 border-foreground"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                >
-                  <PlayCircle className="w-3.5 h-3.5" />
-                  Practice
-                </button>
-              </div>
-            ))}
           </div>
         </div>
       </main>

@@ -65,8 +65,9 @@ export interface VerseMatchDrill {
 export type Drill = MemorizationDrill | ContextChallengeDrill | VerseMatchDrill;
 
 export interface PracticeConfig {
-  by: "book" | "chapter" | "theme";
+  by: "book" | "chapter" | "theme" | "random";
   value: string;
+  method?: "blanks" | "first-letter";
 }
 
 // ── Workout Types ───────────────────────────────────────────
@@ -132,4 +133,24 @@ export interface DrillScore {
   earned: number;
   max: number;
   percentage: number;
+}
+
+// ── Verse Mastery Types ─────────────────────────────────────
+
+export type MasteryLevel = 1 | 2 | 3 | 4 | 5;
+
+export interface VerseMastery {
+  id: string; // reference
+  passage: BiblePassage;
+  currentLevel: MasteryLevel;
+  bestAccuracy: number;
+  bestTime: number; // in seconds
+  status: "learning" | "mastered";
+  lastPracticed: string; // ISO date
+}
+
+export interface MasteryStats {
+  totalMastered: number;
+  streak: number;
+  consistencyScore: number;
 }

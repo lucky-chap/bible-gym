@@ -10,20 +10,38 @@ import {
 } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { User, Group, GroupMember, Workout, AppView, PracticeConfig } from "./types";
+import {
+  User,
+  Group,
+  GroupMember,
+  Workout,
+  AppView,
+  PracticeConfig,
+  VerseMastery,
+  MasteryStats,
+  MasteryLevel,
+  BiblePassage,
+} from "./types";
 import { generateDailyWorkout } from "./workout-generator";
 
 // ── State Shape ─────────────────────────────────────────────
 
 interface AppState {
   user: User | null;
-  currentView: AppView;
+  currentView: AppView | "mastery";
   workout: Workout | null;
   currentDrillIndex: number;
-  practiceDrillType: "memorization" | "context" | "verse-match" | "ai-themed" | null;
+  practiceDrillType:
+    | "memorization"
+    | "context"
+    | "verse-match"
+    | "ai-themed"
+    | null;
   practiceConfig: PracticeConfig | null;
   groups: Group[];
   groupMembers: GroupMember[];
+  verseMastery: Record<string, VerseMastery>;
+  masteryStats: MasteryStats;
   isLoading: boolean;
 }
 
@@ -36,6 +54,12 @@ const initialState: AppState = {
   practiceConfig: null,
   groups: [],
   groupMembers: [],
+  verseMastery: {},
+  masteryStats: {
+    totalMastered: 0,
+    streak: 0,
+    consistencyScore: 0,
+  },
   isLoading: true,
 };
 
@@ -59,6 +83,14 @@ type Action =
   | { type: "START_PRACTICE"; payload: { type: "memorization" | "context" | "verse-match" | "ai-themed", config?: PracticeConfig } }
   | { type: "SET_GROUP_CHALLENGE"; payload: Workout }
   | { type: "DELETE_GROUP_CHALLENGE" }
+  | {
+    type: "UPDATE_VERSE_MASTERY";
+    payload: { id: string; mastery: VerseMastery };
+  }
+  | {
+    type: "COMPLETE_MASTERY_LEVEL";
+    payload: { id: string; level: MasteryLevel; accuracy: number; time: number };
+  }
   | { type: "LOAD_STATE"; payload: Partial<AppState> };
 
 // ── Reducer ─────────────────────────────────────────────────
@@ -132,15 +164,17 @@ function appReducer(state: AppState, action: Action): AppState {
         lastWorkoutDate: today,
       };
 
-      const updatedGroupMembers = state.groupMembers.map((m) =>
-        m.userId === updatedUser.id
-          ? {
-              ...m,
-              weeklyScore: m.weeklyScore + state.workout!.totalScore,
-              streak: updatedUser.streak,
-            }
-          : m
-      ).sort((a, b) => b.weeklyScore - a.weeklyScore);
+      const updatedGroupMembers = state.groupMembers
+        .map((m) =>
+          m.userId === updatedUser.id
+            ? {
+                ...m,
+                weeklyScore: m.weeklyScore + state.workout!.totalScore,
+                streak: updatedUser.streak,
+              }
+            : m,
+        )
+        .sort((a, b) => b.weeklyScore - a.weeklyScore);
 
       let updatedGroups = state.groups;
       if (state.workout.isGroupChallenge && state.user.groupId) {
@@ -188,14 +222,19 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, isLoading: action.payload };
 
     case "START_PRACTICE":
-      return { ...state, currentView: "practice", practiceDrillType: action.payload.type, practiceConfig: action.payload.config || null };
+      return {
+        ...state,
+        currentView: "practice",
+        practiceDrillType: action.payload.type,
+        practiceConfig: action.payload.config || null,
+      };
 
     case "SET_GROUP_CHALLENGE": {
       if (!state.user?.groupId) return state;
       const updatedGroups = state.groups.map((g) =>
         g.id === state.user!.groupId
           ? { ...g, groupChallenge: action.payload, challengeParticipants: [] }
-          : g
+          : g,
       );
       return { ...state, groups: updatedGroups };
     }
@@ -205,9 +244,51 @@ function appReducer(state: AppState, action: Action): AppState {
       const updatedGroups = state.groups.map((g) =>
         g.id === state.user!.groupId
           ? { ...g, groupChallenge: null, challengeParticipants: [] }
-          : g
+          : g,
       );
       return { ...state, groups: updatedGroups };
+    }
+
+    case "UPDATE_VERSE_MASTERY":
+      return {
+        ...state,
+        verseMastery: {
+          ...state.verseMastery,
+          [action.payload.id]: action.payload.mastery,
+        },
+      };
+
+    case "COMPLETE_MASTERY_LEVEL": {
+      const { id, level, accuracy, time } = action.payload;
+      const current = state.verseMastery[id];
+      if (!current) return state;
+
+      const nextLevel = (level < 5 ? level + 1 : 5) as MasteryLevel;
+      const isMastered = nextLevel === 5 && accuracy >= 90;
+
+      const updatedMastery: VerseMastery = {
+        ...current,
+        currentLevel: accuracy >= 90 ? nextLevel : level,
+        bestAccuracy: Math.max(current.bestAccuracy, accuracy),
+        bestTime:
+          current.bestTime === 0 ? time : Math.min(current.bestTime, time),
+        status: isMastered ? "mastered" : current.status,
+        lastPracticed: new Date().toISOString(),
+      };
+
+      const updatedStats = { ...state.masteryStats };
+      if (isMastered && current.status !== "mastered") {
+        updatedStats.totalMastered += 1;
+      }
+
+      return {
+        ...state,
+        verseMastery: {
+          ...state.verseMastery,
+          [id]: updatedMastery,
+        },
+        masteryStats: updatedStats,
+      };
     }
 
     case "LOAD_STATE":
@@ -335,6 +416,51 @@ export function usePractice() {
   };
 }
 
+export function useMastery() {
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const startMastery = (verse: BiblePassage) => {
+    // Initialize mastery if it doesn't exist
+    if (!state.verseMastery[verse.reference]) {
+      const initialMastery: VerseMastery = {
+        id: verse.reference,
+        passage: verse,
+        currentLevel: 1,
+        bestAccuracy: 0,
+        bestTime: 0,
+        status: "learning",
+        lastPracticed: new Date().toISOString(),
+      };
+      dispatch({
+        type: "UPDATE_VERSE_MASTERY",
+        payload: { id: verse.reference, mastery: initialMastery },
+      });
+    }
+    router.push(`/mastery/${encodeURIComponent(verse.reference)}`);
+  };
+
+  const completeLevel = (
+    id: string,
+    level: MasteryLevel,
+    accuracy: number,
+    time: number,
+  ) => {
+    dispatch({
+      type: "COMPLETE_MASTERY_LEVEL",
+      payload: { id, level, accuracy, time },
+    });
+  };
+
+  return {
+    verseMastery: state.verseMastery,
+    masteryStats: state.masteryStats,
+    startMastery,
+    completeLevel,
+  };
+}
+
 export function useGroups() {
   const state = useAppState();
   const dispatch = useAppDispatch();
@@ -361,9 +487,7 @@ export function useGroups() {
     // For MVP, create a mock group for demo purposes
     if (!state.user) return false;
 
-    const existingGroup = state.groups.find(
-      (g) => g.inviteCode === inviteCode
-    );
+    const existingGroup = state.groups.find((g) => g.inviteCode === inviteCode);
     if (existingGroup) {
       dispatch({ type: "JOIN_GROUP", payload: existingGroup });
       return true;
@@ -416,15 +540,9 @@ function generateInviteCode(): string {
 function generateMockLeaderboard(
   dispatch: Dispatch<Action>,
   user: User,
-  _group: Group
+  _group: Group,
 ) {
-  const mockNames = [
-    "Sarah K.",
-    "David M.",
-    "Ruth O.",
-    "James L.",
-    "Esther A.",
-  ];
+  const mockNames = ["Sarah K.", "David M.", "Ruth O.", "James L.", "Esther A."];
 
   const members: GroupMember[] = [
     {
@@ -470,9 +588,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             currentDrillIndex: parsed.currentDrillIndex || 0,
             practiceDrillType: parsed.practiceDrillType || null,
             practiceConfig: parsed.practiceConfig || null,
+            verseMastery: parsed.verseMastery || {},
+            masteryStats: parsed.masteryStats || initialState.masteryStats,
           } as Partial<AppState>,
         });
-        
+
         // Let the layout check if we need to redirect due to auth status
         // But disable loading regardless
         dispatch({ type: "SET_LOADING", payload: false });
@@ -497,7 +617,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           currentDrillIndex: state.currentDrillIndex,
           practiceDrillType: state.practiceDrillType,
           practiceConfig: state.practiceConfig,
-        })
+          verseMastery: state.verseMastery,
+          masteryStats: state.masteryStats,
+        }),
       );
     }
   }, [
@@ -506,6 +628,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state.groupMembers,
     state.workout,
     state.currentDrillIndex,
+    state.verseMastery,
+    state.masteryStats,
     state.isLoading,
   ]);
 

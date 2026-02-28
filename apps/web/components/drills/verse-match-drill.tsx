@@ -3,15 +3,21 @@
 import { useState, useCallback } from "react";
 import { VerseMatchDrill as VerseMatchDrillType } from "@/lib/types";
 import { scoreVerseMatchDrill } from "@/lib/workout-generator";
-import { Zap, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { Zap, CheckCircle2, XCircle, RotateCcw, Sparkles } from "lucide-react";
 
 interface Props {
   drill: VerseMatchDrillType;
   onComplete: (score: number) => void;
   onShowResults?: () => void;
+  isAiGenerated?: boolean;
 }
 
-export function VerseMatchDrill({ drill, onComplete, onShowResults }: Props) {
+export function VerseMatchDrill({
+  drill,
+  onComplete,
+  onShowResults,
+  isAiGenerated = false,
+}: Props) {
   const [matches, setMatches] = useState<Record<string, string>>({});
   const [selectedRef, setSelectedRef] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -94,7 +100,14 @@ export function VerseMatchDrill({ drill, onComplete, onShowResults }: Props) {
           <Zap className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-foreground">Verse Match</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-foreground">Verse Match</h2>
+            {isAiGenerated && (
+              <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                <Sparkles className="w-2.5 h-2.5" /> AI
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground font-medium">
             Match each reference to its verse
           </p>
