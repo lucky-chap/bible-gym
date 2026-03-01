@@ -97,12 +97,111 @@ function localFallback(
   }
 }
 
-// ━━ AI + Bible API path ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━ Bible API ONLY path (No AI) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function fetchPassagesFromBibleApi(config: PracticeConfig, count: number): Promise<BiblePassage[]> {
+  const passages: BiblePassage[] = [];
+  try {
+    let queryRef = config.value;
+
+    // If "By Book", we just append " 1" to get chapter 1 to guarantee a hit
+    if (config.by === "book" && !/\d/.test(queryRef)) {
+      queryRef += " 1";
+    }
+    
+    // If "By Chapter" and user specified verses
+    if (config.by === "chapter" && config.verses) {
+      queryRef += `:${config.verses}`;
+    }
+
+    // If random or no value
+    if (config.by === "random" || !queryRef.trim()) {
+       // Just fallback to returning the hardcoded passages
+       return shuffleArray(BIBLE_PASSAGES).slice(0, count);
+    }
+
+    // Fetch the chapter or passage
+    const url = `https://bible-api.com/${encodeURIComponent(queryRef)}`;
+    const res = await fetch(url, { cache: "no-store" });
+    
+    if (!res.ok) {
+       console.log("Bible API fetch failed for", queryRef, "- falling back to local data");
+       return shuffleArray(BIBLE_PASSAGES).slice(0, count);
+    }
+
+    const data = await res.json();
+    
+    if (data.verses && data.verses.length > 0) {
+       // Pick 'count' random verses from this chapter
+       const randomVerses = shuffleArray(data.verses).slice(0, count);
+       
+       for (const v of randomVerses) {
+         const verseData = v as any;
+         passages.push({
+           reference: `${verseData.book_name} ${verseData.chapter}:${verseData.verse}`,
+           text: (verseData.text || "").trim(),
+           book: verseData.book_name,
+           chapter: verseData.chapter,
+           verses: `${verseData.verse}`,
+         });
+       }
+       return passages;
+    }
+  } catch (error) {
+    console.error("Bible API fetch error:", error);
+  }
+
+  // Final fallback
+  return shuffleArray(BIBLE_PASSAGES).slice(0, count);
+}
+
 
 export async function generatePracticeDrillAction(
   type: "memorization" | "context" | "verse-match" | "rearrange",
   config: PracticeConfig,
 ): Promise<DrillResult> {
+
+  const count = type === "rearrange" ? 1 : 3;
+  const passagesWithText = await fetchPassagesFromBibleApi(config, count);
+  const seed = Date.now();
+
+  try {
+    if (type === "memorization") {
+      const questions: MemorizationQuestion[] = passagesWithText.map((p, i) =>
+        buildBlanks(p, seed, i),
+      );
+      return { drill: { type: "memorization", questions }, isAiGenerated: false };
+    } else if (type === "verse-match") {
+      const pairs = passagesWithText.map((p) => ({
+        reference: p.reference,
+        text: p.text,
+      }));
+      return { drill: { type: "verse-match", pairs }, isAiGenerated: false };
+    } else if (type === "rearrange") {
+      const p = passagesWithText[0];
+      const units = p.text.split(/(?<=[.;?])\s+/).filter(u => u.length > 0).map((text, i) => ({
+        id: `rearrange-unit-${seed}-${i}`,
+        text: text.trim(),
+        originalIndex: i
+      }));
+      return {
+        drill: {
+          type: "rearrange",
+          passage: p,
+          shuffledVerses: shuffleArray(units)
+        },
+        isAiGenerated: false
+      };
+    } else {
+      // Return local context fallback if someone hacks the UI to ask for it
+      return { drill: localFallback(type), isAiGenerated: false };
+    }
+  } catch (e) {
+    console.error("Drill generation failed, using local fallback:", e);
+    return { drill: localFallback(type), isAiGenerated: false };
+  }
+
+  /* // -------- AI LOGIC COMMENTED OUT FOR NOW ---------
   const apiKey = process.env.GEMINI_API_KEY;
 
   // No API key — fall back immediately
@@ -237,4 +336,5 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
     console.error("AI drill generation failed, using local fallback:", e);
     return { drill: localFallback(type), isAiGenerated: false };
   }
+  */
 }

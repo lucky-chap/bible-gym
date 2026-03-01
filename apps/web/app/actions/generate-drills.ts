@@ -159,6 +159,7 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
       memorization: 0,
       context: 0,
       verseMatch: 0,
+      rearrange: 0,
     },
     totalScore: 0,
   };

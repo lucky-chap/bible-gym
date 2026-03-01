@@ -87,6 +87,8 @@ async function main() {
                 await createEmailAttribute(dbId, collId, "email", false);
                 await createIntegerAttribute(dbId, collId, "streak", false);
                 await createIntegerAttribute(dbId, collId, "totalScore", false);
+                await createIntegerAttribute(dbId, collId, "weeklyScore", false);
+                await createStringAttribute(dbId, collId, "lastWeeklyReset", 255, false);
                 await createStringAttribute(dbId, collId, "lastWorkoutDate", 255, false);
                 await createStringAttribute(dbId, collId, "groupId", 255, false);
             }
@@ -138,6 +140,23 @@ async function main() {
                 await createIntegerAttribute(dbId, collId, "bestTime", false);
                 await createStringAttribute(dbId, collId, "status", 255, false);
                 await createStringAttribute(dbId, collId, "lastPracticed", 255, false);
+            }
+        );
+
+        // 5. Groups Collection
+        await setupCollection(
+            process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID!,
+            "Groups",
+            defaultPermissions,
+            async (db, dbId, collId) => {
+                await createStringAttribute(dbId, collId, "name", 255, false);
+                await createStringAttribute(dbId, collId, "inviteCode", 255, false);
+                // In Appwrite, we can store string arrays using string attributes with array=true
+                try { await db.createStringAttribute(dbId, collId, "members", 255, false, undefined, true); } catch (e: any) { if (e.code !== 409) throw e; }
+                await createStringAttribute(dbId, collId, "createdBy", 255, false);
+                await createStringAttribute(dbId, collId, "createdAt", 255, false);
+                await createStringAttribute(dbId, collId, "groupChallenge", 5000, false); // Stored as JSON string
+                try { await db.createStringAttribute(dbId, collId, "challengeParticipants", 255, false, undefined, true); } catch (e: any) { if (e.code !== 409) throw e; }
             }
         );
 

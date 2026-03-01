@@ -300,14 +300,14 @@ export function Dashboard() {
                       type: "memorization" as const,
                       onClick: () => router.push("/practice/memorization"),
                     },
-                    {
+                    /* {
                       icon: Target,
                       name: "Context",
                       desc: "Deep study",
                       color: "#F59E0B",
                       type: "context" as const,
                       onClick: () => router.push("/practice/context"),
-                    },
+                    }, */
                     {
                       icon: Zap,
                       name: "Match",

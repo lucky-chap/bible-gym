@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePractice } from "@/lib/store";
 import { BIBLE_BOOKS } from "@/lib/bible-structure";
 import {
@@ -15,6 +15,7 @@ import {
   Target,
   Zap,
   GripVertical,
+  Loader2,
 } from "lucide-react";
 
 export default function PracticeConfigPage() {
@@ -35,6 +36,24 @@ export default function PracticeConfigPage() {
   const [theme, setTheme] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [method, setMethod] = useState<"blanks" | "first-letter">("blanks");
+  const currentChapterVerses = useMemo(() => {
+    if (selectionType === "chapter" && selectedBook && selectedChapter) {
+      const bookData = BIBLE_BOOKS.find((b) => b.name === selectedBook);
+      return (bookData?.verses?.[selectedChapter - 1] as number[]) ?? [];
+    }
+    return [];
+  }, [selectionType, selectedBook, selectedChapter]);
+
+  const [verseRange, setVerseRange] = useState<[number | null, number | null]>([
+    null,
+    null,
+  ]);
+
+  useEffect(() => {
+    if (selectionType !== "chapter" || !selectedBook || !selectedChapter) {
+      setVerseRange([null, null]);
+    }
+  }, [selectionType, selectedBook, selectedChapter]);
 
   const drillInfo = {
     memorization: {
@@ -79,9 +98,22 @@ export default function PracticeConfigPage() {
     if (selectionType === "book" && selectedBook) {
       config = { by: "book" as const, value: selectedBook, method };
     } else if (selectionType === "chapter" && selectedBook && selectedChapter) {
+      let finalVerses = undefined;
+      const [v1, v2] = verseRange;
+      if (v1 !== null) {
+        if (v2 !== null && v2 !== v1) {
+          const min = Math.min(v1, v2);
+          const max = Math.max(v1, v2);
+          finalVerses = `${min}-${max}`;
+        } else {
+          finalVerses = `${v1}`;
+        }
+      }
+
       config = {
         by: "chapter" as const,
         value: `${selectedBook} ${selectedChapter}`,
+        verses: finalVerses,
         method,
       };
     } else if (selectionType === "theme" && theme.trim()) {
@@ -315,64 +347,177 @@ export default function PracticeConfigPage() {
                 </div>
               ) : (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Book className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-bold text-lg">{selectedBook}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedBook(null);
-                        setSelectedChapter(null);
-                      }}
-                      className="text-xs font-bold text-primary hover:underline"
-                    >
-                      Change Book
-                    </button>
-                  </div>
-
-                  {selectionType === "chapter" ? (
-                    <div className="space-y-4">
-                      <label className="text-sm font-bold text-foreground">
-                        Select a Chapter
-                      </label>
-                      <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
-                        {Array.from({
-                          length:
-                            BIBLE_BOOKS.find((b) => b.name === selectedBook)
-                              ?.chapters || 0,
-                        }).map((_, i) => (
+                  {selectionType === "chapter" && selectedChapter !== null ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                           <button
-                            key={i + 1}
-                            onClick={() => setSelectedChapter(i + 1)}
-                            className={`aspect-square flex items-center justify-center rounded-lg border-2 font-bold transition-all ${
-                              selectedChapter === i + 1
-                                ? "bg-primary border-foreground text-white"
-                                : "bg-card border-foreground/10 text-foreground hover:border-foreground/30"
-                            }`}
+                            onClick={() => setSelectedChapter(null)}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
                           >
-                            {i + 1}
+                            <ArrowLeft className="w-4 h-4" />
                           </button>
-                        ))}
+                          <span className="font-bold text-lg">
+                            {selectedBook} {selectedChapter}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedBook(null);
+                            setSelectedChapter(null);
+                          }}
+                          className="text-xs font-bold text-primary hover:underline"
+                        >
+                          Change Book
+                        </button>
+                      </div>
+
+                      <div className="bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 p-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-black text-primary uppercase tracking-widest text-sm">
+                            Step 2: Verses (Optional)
+                          </h4>
+                          {(verseRange[0] !== null ||
+                            verseRange[1] !== null) && (
+                            <button
+                              onClick={() => setVerseRange([null, null])}
+                              className="text-xs font-black text-primary hover:underline uppercase"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                        {currentChapterVerses.length > 0 ? (
+                          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                            {currentChapterVerses.map((verseNum) => {
+                              const min =
+                                verseRange[0] !== null && verseRange[1] !== null
+                                  ? Math.min(verseRange[0], verseRange[1])
+                                  : verseRange[0];
+                              const max =
+                                verseRange[0] !== null && verseRange[1] !== null
+                                  ? Math.max(verseRange[0], verseRange[1])
+                                  : verseRange[0];
+
+                              const isStart = verseRange[0] === verseNum;
+                              const isEnd = verseRange[1] === verseNum;
+                              const isBoth =
+                                verseRange[0] !== null &&
+                                verseRange[1] !== null;
+                              const isBetween =
+                                isBoth &&
+                                min !== null &&
+                                max !== null &&
+                                verseNum > min &&
+                                verseNum < max;
+                              const isSelected = isStart || isEnd || isBetween;
+
+                              return (
+                                <button
+                                  key={verseNum}
+                                  onClick={() => {
+                                    if (verseRange[0] === null) {
+                                      setVerseRange([verseNum, null]);
+                                    } else if (verseRange[1] === null) {
+                                      if (verseNum === verseRange[0]) {
+                                        setVerseRange([null, null]);
+                                      } else {
+                                        setVerseRange([
+                                          verseRange[0],
+                                          verseNum,
+                                        ]);
+                                      }
+                                    } else {
+                                      setVerseRange([verseNum, null]);
+                                    }
+                                  }}
+                                  className={`aspect-square flex items-center justify-center rounded-lg border-2 font-bold transition-all ${
+                                    isSelected
+                                      ? "bg-primary border-foreground text-white"
+                                      : "bg-card border-foreground/10 text-foreground hover:border-foreground/30"
+                                  }`}
+                                >
+                                  <span className="text-sm">{verseNum}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-center text-muted-foreground py-4 font-bold">
+                            No verses found for this chapter.
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 bg-muted/30 rounded-3xl border-2 border-dashed border-foreground/10">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Book className="w-8 h-8 text-primary" />
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Book className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="font-bold text-lg">
+                            {selectedBook}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedBook(null);
+                            setSelectedChapter(null);
+                          }}
+                          className="text-xs font-bold text-primary hover:underline"
+                        >
+                          Change Book
+                        </button>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-foreground">
-                          All of {selectedBook}
-                        </h4>
-                        <p className="text-sm text-muted-foreground max-w-[250px] mx-auto">
-                          Verses will be randomly selected from any chapter in{" "}
-                          {selectedBook}.
-                        </p>
-                      </div>
-                    </div>
+
+                      {selectionType === "chapter" ? (
+                        <div className="bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 p-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-black text-primary uppercase tracking-widest text-sm">
+                              Step 1: Select a Chapter
+                            </h4>
+                          </div>
+                          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                            {Array.from({
+                              length:
+                                BIBLE_BOOKS.find((b) => b.name === selectedBook)
+                                  ?.chapters || 0,
+                            }).map((_, i) => {
+                              const chapterNum = i + 1;
+                              return (
+                                <button
+                                  key={chapterNum}
+                                  onClick={() => setSelectedChapter(chapterNum)}
+                                  className={`aspect-square flex items-center justify-center rounded-lg border-2 font-bold transition-all ${
+                                    selectedChapter === chapterNum
+                                      ? "bg-primary border-foreground text-white"
+                                      : "bg-card border-foreground/10 text-foreground hover:border-foreground/30"
+                                  }`}
+                                >
+                                  <span className="text-sm">{chapterNum}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 bg-muted/30 rounded-3xl border-2 border-dashed border-foreground/10">
+                          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Book className="w-8 h-8 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-foreground">
+                              All of {selectedBook}
+                            </h4>
+                            <p className="text-sm text-muted-foreground max-w-[250px] mx-auto">
+                              Verses will be randomly selected from any chapter
+                              in {selectedBook}.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

@@ -432,9 +432,9 @@ export function GroupScreen() {
                   type="text"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="INVITE CODE"
+                  placeholder="Invite Code"
                   maxLength={6}
-                  className="w-full px-4 py-4 rounded-2xl bg-background border-2 border-foreground text-foreground text-center text-2xl font-mono tracking-[0.3em] placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition-all uppercase font-black"
+                  className="w-full px-4 placeholder:font-sans py-4 rounded-2xl bg-background border-2 border-foreground text-foreground text-center text-2xl font-mono tracking-[0.3em] placeholder-[#B0AAA2] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition-all uppercase font-black"
                 />
                 {joinError && (
                   <p className="text-red-500 text-sm font-bold">{joinError}</p>

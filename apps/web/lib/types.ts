@@ -7,6 +7,8 @@ export interface User {
   avatarInitials: string;
   streak: number;
   totalScore: number;
+  weeklyScore: number;
+  lastWeeklyReset: string | null;
   lastWorkoutDate: string | null; // ISO date string
   groupId: string | null;
   createdAt: string;
@@ -73,6 +75,7 @@ export type Drill = MemorizationDrill | ContextChallengeDrill | VerseMatchDrill 
 export interface PracticeConfig {
   by: "book" | "chapter" | "theme" | "random";
   value: string;
+  verses?: string;
   method?: "blanks" | "first-letter";
 }
 

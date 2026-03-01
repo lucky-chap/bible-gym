@@ -183,12 +183,17 @@ function appReducer(state: AppState, action: Action): AppState {
           ? state.user.streak + 1
           : 1;
 
-      const updatedUser: User = {
-        ...state.user,
-        streak: newStreak,
-        totalScore: state.user.totalScore + state.workout.totalScore,
-        lastWorkoutDate: today,
-      };
+      const updatedUser: User | null = state.user
+        ? {
+            ...state.user,
+            streak: newStreak,
+            totalScore: state.user.totalScore + state.workout!.totalScore,
+            weeklyScore: state.workout!.isGroupChallenge
+              ? (state.user.weeklyScore || 0) + state.workout!.totalScore
+              : state.user.weeklyScore,
+            lastWorkoutDate: today,
+          }
+        : null;
 
       // Sync user data to Appwrite
       if (updatedUser) {
@@ -199,6 +204,7 @@ function appReducer(state: AppState, action: Action): AppState {
           {
             streak: updatedUser.streak,
             totalScore: updatedUser.totalScore,
+            weeklyScore: updatedUser.weeklyScore,
             lastWorkoutDate: updatedUser.lastWorkoutDate,
           }
         ).catch(e => console.error("Failed to sync user data to Appwrite", e));
@@ -222,11 +228,11 @@ function appReducer(state: AppState, action: Action): AppState {
 
       const updatedGroupMembers = state.groupMembers
         .map((m) =>
-          m.userId === updatedUser.id
+          m.userId === state.user?.id
             ? {
                 ...m,
                 weeklyScore: m.weeklyScore + state.workout!.totalScore,
-                streak: updatedUser.streak,
+                streak: updatedUser ? updatedUser.streak : state.user.streak,
               }
             : m,
         )
@@ -300,6 +306,26 @@ function appReducer(state: AppState, action: Action): AppState {
                config: action.payload.config ? JSON.stringify(action.payload.config) : null
             }
         ).catch(e => console.error("Failed to sync practice history to Appwrite", e));
+
+        const updatedUser: User = {
+          ...state.user,
+          totalScore: state.user.totalScore + action.payload.score,
+        };
+
+        // Sync updated score to Appwrite users collection
+        databases.updateDocument(
+          APPWRITE_DB_ID,
+          APPWRITE_USERS_COLLECTION_ID,
+          updatedUser.id,
+          {
+            totalScore: updatedUser.totalScore,
+          }
+        ).catch(e => console.error("Failed to sync user practice score to Appwrite", e));
+
+        return {
+          ...state,
+          user: updatedUser,
+        };
       }
       return state;
     }
@@ -740,6 +766,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
               currentAccount.$id
             );
 
+            // Helper for weekly resets
+            const getStartOfWeek = (date: Date) => {
+              const d = new Date(date);
+              const day = d.getDay();
+              const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+              d.setDate(diff);
+              d.setHours(0,0,0,0);
+              return d;
+            };
+
+            const currentStartOfWeek = getStartOfWeek(new Date());
+
             const user: User = {
               id: currentAccount.$id,
               name: currentAccount.name,
@@ -752,10 +790,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 .slice(0, 2),
               streak: profile.streak || 0,
               totalScore: profile.totalScore || 0,
+              weeklyScore: profile.weeklyScore || 0,
+              lastWeeklyReset: profile.lastWeeklyReset || null,
               lastWorkoutDate: profile.lastWorkoutDate || null,
               groupId: profile.groupId || null,
               createdAt: currentAccount.$createdAt,
             };
+
+            // Check if we need to reset the weekly score
+            if (!user.lastWeeklyReset || new Date(user.lastWeeklyReset) < currentStartOfWeek) {
+              user.weeklyScore = 0;
+              user.lastWeeklyReset = new Date().toISOString();
+              
+              // Sync reset to Appwrite
+              databases.updateDocument(
+                APPWRITE_DB_ID,
+                APPWRITE_USERS_COLLECTION_ID,
+                user.id,
+                {
+                  weeklyScore: 0,
+                  lastWeeklyReset: user.lastWeeklyReset,
+                }
+              ).catch(e => console.error("Failed to sync weekly reset", e));
+            }
+
             dispatch({ type: "INITIALIZE_APPWRITE_USER", payload: user });
 
           } catch (e: any) {
@@ -773,6 +831,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   .slice(0, 2),
                 streak: 0,
                 totalScore: 0,
+                weeklyScore: 0,
+                lastWeeklyReset: new Date().toISOString(),
                 lastWorkoutDate: null,
                 groupId: null,
                 createdAt: currentAccount.$createdAt,
@@ -788,6 +848,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         email: newUser.email,
                         streak: newUser.streak,
                         totalScore: newUser.totalScore,
+                        weeklyScore: newUser.weeklyScore,
+                        lastWeeklyReset: newUser.lastWeeklyReset,
                         lastWorkoutDate: newUser.lastWorkoutDate,
                         groupId: newUser.groupId
                     }
