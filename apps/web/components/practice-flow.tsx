@@ -154,12 +154,8 @@ export function PracticeFlow() {
             </div>
             <div className="text-foreground font-bold">
               {practiceConfig
-                ? `Preparing ${practiceConfig.by === "random" ? "random" : practiceConfig.by} drill with AI...`
-                : "Preparing drill with AI..."}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold">
-              <Sparkles className="w-3 h-3 text-[#8B5CF6]" />
-              Powered by Gemini + Bible API
+                ? `Preparing ${practiceConfig.by === "random" ? "random" : practiceConfig.by} drill...`
+                : "Preparing drill..."}
             </div>
           </div>
         ) : currentDrill ? (
@@ -171,6 +167,8 @@ export function PracticeFlow() {
                 onShowResults={() => setIsTimerPaused(true)}
                 method={practiceConfig?.method}
                 isAiGenerated={isAiGenerated}
+                isPractice={true}
+                onExit={exitPractice}
               />
             )}
             {currentDrill.type === "context" && (
@@ -179,6 +177,8 @@ export function PracticeFlow() {
                 onComplete={handleDrillComplete}
                 onShowResults={() => setIsTimerPaused(true)}
                 isAiGenerated={isAiGenerated}
+                isPractice={true}
+                onExit={exitPractice}
               />
             )}
             {currentDrill.type === "verse-match" && (
@@ -187,6 +187,8 @@ export function PracticeFlow() {
                 onComplete={handleDrillComplete}
                 onShowResults={() => setIsTimerPaused(true)}
                 isAiGenerated={isAiGenerated}
+                isPractice={true}
+                onExit={exitPractice}
               />
             )}
             {currentDrill.type === "rearrange" && (
@@ -195,6 +197,8 @@ export function PracticeFlow() {
                 onComplete={(score) => handleDrillComplete(score)}
                 onShowResults={() => setIsTimerPaused(true)}
                 isAiGenerated={isAiGenerated}
+                isPractice={true}
+                onExit={exitPractice}
               />
             )}
           </>

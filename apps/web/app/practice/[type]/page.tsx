@@ -102,11 +102,45 @@ export default function PracticeConfigPage() {
       const [v1, v2] = verseRange;
       if (v1 !== null) {
         if (v2 !== null && v2 !== v1) {
-          const min = Math.min(v1, v2);
-          const max = Math.max(v1, v2);
-          finalVerses = `${min}-${max}`;
+          let min = Math.min(v1, v2);
+          let max = Math.max(v1, v2);
+
+          if (type === "memorization" || type === "rearrange") {
+            const totalVerses = currentChapterVerses.length;
+            const targetMinSize = 4;
+            const targetMaxSize = 6;
+
+            // First, enforce max size
+            if (max - min + 1 > targetMaxSize) {
+              max = min + targetMaxSize - 1;
+            }
+
+            // Then, expand to meet min size if possible (Sliding Window)
+            // Try expanding forward first
+            if (max - min + 1 < targetMinSize) {
+              max = Math.min(totalVerses, min + targetMinSize - 1);
+            }
+            // If still too small, expand backward
+            if (max - min + 1 < targetMinSize) {
+              min = Math.max(1, max - targetMinSize + 1);
+            }
+          }
+          finalVerses = min === max ? `${v1}` : `${min}-${max}`;
         } else {
-          finalVerses = `${v1}`;
+          // Single verse selected
+          if (type === "memorization" || type === "rearrange") {
+            const totalVerses = currentChapterVerses.length;
+            let min = v1;
+            let max = Math.min(totalVerses, v1 + 3);
+
+            // If we hit the end of the chapter and don't have 4 verses, expand backwards
+            if (max - min + 1 < 4) {
+              min = Math.max(1, max - 3);
+            }
+            finalVerses = min === max ? `${min}` : `${min}-${max}`;
+          } else {
+            finalVerses = `${v1}`;
+          }
         }
       }
 
@@ -350,16 +384,23 @@ export default function PracticeConfigPage() {
                   {selectionType === "chapter" && selectedChapter !== null ? (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setSelectedChapter(null)}
-                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                          </button>
-                          <span className="font-bold text-lg">
-                            {selectedBook} {selectedChapter}
-                          </span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedChapter(null)}
+                              className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                            </button>
+                            <span className="font-bold text-lg">
+                              {selectedBook} {selectedChapter}
+                            </span>
+                          </div>
+                          {type !== "verse-match" && type !== "context" && (
+                            <p className="text-[10px] sm:text-xs font-black text-primary/60 uppercase tracking-widest pl-7">
+                              Select a range (4-6 verses recommended)
+                            </p>
+                          )}
                         </div>
                         <button
                           onClick={() => {
@@ -372,82 +413,103 @@ export default function PracticeConfigPage() {
                         </button>
                       </div>
 
-                      <div className="bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 p-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-black text-primary uppercase tracking-widest text-sm">
-                            Step 2: Verses (Optional)
-                          </h4>
-                          {(verseRange[0] !== null ||
-                            verseRange[1] !== null) && (
-                            <button
-                              onClick={() => setVerseRange([null, null])}
-                              className="text-xs font-black text-primary hover:underline uppercase"
-                            >
-                              Reset
-                            </button>
+                      {type !== "verse-match" && (
+                        <div className="bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 p-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-black text-primary uppercase tracking-widest text-sm">
+                              Step 2: Verses (Required 4-6)
+                            </h4>
+                            {(verseRange[0] !== null ||
+                              verseRange[1] !== null) && (
+                              <button
+                                onClick={() => setVerseRange([null, null])}
+                                className="text-xs font-black text-primary hover:underline uppercase"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                          {currentChapterVerses.length > 0 ? (
+                            <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
+                              {currentChapterVerses.map((verseNum) => {
+                                const min =
+                                  verseRange[0] !== null &&
+                                  verseRange[1] !== null
+                                    ? Math.min(verseRange[0], verseRange[1])
+                                    : verseRange[0];
+                                const max =
+                                  verseRange[0] !== null &&
+                                  verseRange[1] !== null
+                                    ? Math.max(verseRange[0], verseRange[1])
+                                    : verseRange[0];
+
+                                const isStart = verseRange[0] === verseNum;
+                                const isEnd = verseRange[1] === verseNum;
+                                const isBoth =
+                                  verseRange[0] !== null &&
+                                  verseRange[1] !== null;
+                                const isBetween =
+                                  isBoth &&
+                                  min !== null &&
+                                  max !== null &&
+                                  verseNum > min &&
+                                  verseNum < max;
+                                const isSelected =
+                                  isStart || isEnd || isBetween;
+
+                                return (
+                                  <button
+                                    key={verseNum}
+                                    onClick={() => {
+                                      if (verseRange[0] === null) {
+                                        setVerseRange([verseNum, null]);
+                                      } else if (verseRange[1] === null) {
+                                        if (verseNum === verseRange[0]) {
+                                          setVerseRange([null, null]);
+                                        } else {
+                                          // Enforce max 6 spread
+                                          const diff = Math.abs(
+                                            verseNum - verseRange[0],
+                                          );
+                                          if (diff >= 6) {
+                                            // Auto-cap it
+                                            const capped =
+                                              verseNum > verseRange[0]
+                                                ? verseRange[0] + 5
+                                                : verseRange[0] - 5;
+                                            setVerseRange([
+                                              verseRange[0],
+                                              capped,
+                                            ]);
+                                          } else {
+                                            setVerseRange([
+                                              verseRange[0],
+                                              verseNum,
+                                            ]);
+                                          }
+                                        }
+                                      } else {
+                                        setVerseRange([verseNum, null]);
+                                      }
+                                    }}
+                                    className={`aspect-square flex items-center justify-center rounded-lg border-2 font-bold transition-all ${
+                                      isSelected
+                                        ? "bg-primary border-foreground text-white"
+                                        : "bg-card border-foreground/10 text-foreground hover:border-foreground/30"
+                                    }`}
+                                  >
+                                    <span className="text-sm">{verseNum}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-center text-muted-foreground py-4 font-bold">
+                              No verses found for this chapter.
+                            </p>
                           )}
                         </div>
-                        {currentChapterVerses.length > 0 ? (
-                          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2">
-                            {currentChapterVerses.map((verseNum) => {
-                              const min =
-                                verseRange[0] !== null && verseRange[1] !== null
-                                  ? Math.min(verseRange[0], verseRange[1])
-                                  : verseRange[0];
-                              const max =
-                                verseRange[0] !== null && verseRange[1] !== null
-                                  ? Math.max(verseRange[0], verseRange[1])
-                                  : verseRange[0];
-
-                              const isStart = verseRange[0] === verseNum;
-                              const isEnd = verseRange[1] === verseNum;
-                              const isBoth =
-                                verseRange[0] !== null &&
-                                verseRange[1] !== null;
-                              const isBetween =
-                                isBoth &&
-                                min !== null &&
-                                max !== null &&
-                                verseNum > min &&
-                                verseNum < max;
-                              const isSelected = isStart || isEnd || isBetween;
-
-                              return (
-                                <button
-                                  key={verseNum}
-                                  onClick={() => {
-                                    if (verseRange[0] === null) {
-                                      setVerseRange([verseNum, null]);
-                                    } else if (verseRange[1] === null) {
-                                      if (verseNum === verseRange[0]) {
-                                        setVerseRange([null, null]);
-                                      } else {
-                                        setVerseRange([
-                                          verseRange[0],
-                                          verseNum,
-                                        ]);
-                                      }
-                                    } else {
-                                      setVerseRange([verseNum, null]);
-                                    }
-                                  }}
-                                  className={`aspect-square flex items-center justify-center rounded-lg border-2 font-bold transition-all ${
-                                    isSelected
-                                      ? "bg-primary border-foreground text-white"
-                                      : "bg-card border-foreground/10 text-foreground hover:border-foreground/30"
-                                  }`}
-                                >
-                                  <span className="text-sm">{verseNum}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-center text-muted-foreground py-4 font-bold">
-                            No verses found for this chapter.
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   ) : (
                     <>

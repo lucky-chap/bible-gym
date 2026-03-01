@@ -16,6 +16,8 @@ interface Props {
   onComplete: (score: number) => void;
   onShowResults?: () => void;
   isAiGenerated?: boolean;
+  isPractice?: boolean;
+  onExit?: () => void;
 }
 
 export function ContextChallengeDrill({
@@ -23,6 +25,8 @@ export function ContextChallengeDrill({
   onComplete,
   onShowResults,
   isAiGenerated = false,
+  isPractice = false,
+  onExit,
 }: Props) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedIndices, setSelectedIndices] = useState<
@@ -139,13 +143,24 @@ export function ContextChallengeDrill({
           })}
         </div>
 
-        <button
-          onClick={() => onComplete(score)}
-          className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-          style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
-        >
-          Next Drill →
-        </button>
+        <div className="flex gap-4 w-full">
+          {isPractice && onExit && (
+            <button
+              onClick={onExit}
+              className="w-full py-4 rounded-full bg-card text-foreground font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+            >
+              Go Back
+            </button>
+          )}
+          <button
+            onClick={() => onComplete(score)}
+            className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+          >
+            {isPractice ? "Play Again →" : "Next Drill →"}
+          </button>
+        </div>
       </div>
     );
   }

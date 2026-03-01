@@ -6,6 +6,7 @@ export async function fetchBibleVerse(reference: string): Promise<{
   book: string;
   chapter: number;
   verses: string;
+  verseTexts: string[];
 }> {
   // Use bible-api.com
   const url = `https://bible-api.com/${encodeURIComponent(reference)}`;
@@ -14,15 +15,16 @@ export async function fetchBibleVerse(reference: string): Promise<{
     throw new Error(`Failed to fetch Bible verse: ${reference}`);
   }
   const data = await res.json();
-  
+
   // Format the returned data to match our BiblePassage interface
   const bookName = data.verses?.[0]?.book_name || "";
   const chapterStr = data.verses?.[0]?.chapter || "1";
-  
+
   // Map verses ranges
   const firstVerse = data.verses?.[0]?.verse;
   const lastVerse = data.verses?.[data.verses.length - 1]?.verse;
-  const versesString = firstVerse === lastVerse ? `${firstVerse}` : `${firstVerse}-${lastVerse}`;
+  const versesString =
+    firstVerse === lastVerse ? `${firstVerse}` : `${firstVerse}-${lastVerse}`;
 
   return {
     reference: data.reference,
@@ -30,5 +32,6 @@ export async function fetchBibleVerse(reference: string): Promise<{
     book: bookName,
     chapter: parseInt(chapterStr, 10),
     verses: versesString,
+    verseTexts: data.verses?.map((v: any) => (v.text || "").trim()) || [],
   };
 }

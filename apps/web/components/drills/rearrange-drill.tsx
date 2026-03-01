@@ -1,85 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { RearrangeDrill } from "@/lib/types";
 import { GripVertical, CheckCircle2, Sparkles } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 
 interface SortableItemProps {
-  id: string;
-  text: string;
+  item: any;
   isSubmitted?: boolean;
   isCorrect?: boolean;
 }
 
-function SortableItem({ id, text, isSubmitted, isCorrect }: SortableItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id, disabled: isSubmitted });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : "auto",
-  };
-
+function SortableItem({ item, isSubmitted, isCorrect }: SortableItemProps) {
   return (
-    <div
-      ref={setNodeRef}
-      className={`relative group flex items-start gap-4 p-5 border-2 rounded-2xl transition-all ${
-        isDragging ? "opacity-50 scale-102 rotate-1" : ""
-      } ${
+    <Reorder.Item
+      value={item}
+      id={item.id}
+      dragListener={!isSubmitted}
+      className={`relative group flex items-start gap-4 p-5 border-2 rounded-2xl bg-card ${
         isSubmitted
           ? isCorrect
-            ? "bg-[#D1FAE5] border-[#10B981]"
-            : "bg-red-50 border-red-500"
-          : "bg-card border-foreground"
-      }`}
+            ? "border-[#10B981] bg-[#D1FAE5]"
+            : "border-red-500 bg-red-50"
+          : "border-foreground"
+      } ${!isSubmitted ? "cursor-grab active:cursor-grabbing hover:bg-muted/30" : ""}`}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 50 : "auto",
-        boxShadow: isDragging
-          ? "none"
-          : isSubmitted
-            ? "none"
-            : "4px 4px 0px 0px var(--foreground)",
+        boxShadow: !isSubmitted ? "2px 2px 0px 0px var(--foreground)" : "none",
+      }}
+      whileDrag={{
+        scale: 1.02,
+        boxShadow: "8px 8px 0px 0px var(--foreground)",
+        rotate: 1,
+        zIndex: 10,
+        backgroundColor: "var(--card)",
       }}
     >
       <div
-        {...attributes}
-        {...listeners}
-        className={`mt-1 p-1 rounded-lg transition-colors shrink-0 ${
+        className={`mt-1 p-1 rounded-lg shrink-0 transition-colors ${
           isSubmitted
-            ? "opacity-0 cursor-default"
-            : "hover:bg-muted cursor-grab active:cursor-grabbing text-muted-foreground"
+            ? "opacity-0"
+            : "text-muted-foreground group-hover:text-primary"
         }`}
       >
         <GripVertical className="w-5 h-5" />
       </div>
-      <p className="font-bold text-foreground leading-relaxed">{text}</p>
-    </div>
+      <p className="font-bold text-foreground leading-relaxed select-none">
+        {item.text}
+      </p>
+    </Reorder.Item>
   );
 }
 
@@ -88,6 +56,8 @@ interface RearrangeDrillProps {
   onComplete: (score: number, order: any[]) => void;
   onShowResults?: () => void;
   isAiGenerated?: boolean;
+  isPractice?: boolean;
+  onExit?: () => void;
 }
 
 export function RearrangeDrillComponent({
@@ -95,29 +65,12 @@ export function RearrangeDrillComponent({
   onComplete,
   onShowResults,
   isAiGenerated,
+  isPractice,
+  onExit,
 }: RearrangeDrillProps) {
   const [items, setItems] = useState(drill.shuffledVerses);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
 
   const handleSubmit = () => {
     let correct = 0;
@@ -155,73 +108,86 @@ export function RearrangeDrillComponent({
       </div>
 
       <div className="space-y-4">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+        <Reorder.Group
+          axis="y"
+          values={items}
+          onReorder={setItems}
+          className="flex flex-col gap-4"
         >
-          <SortableContext
-            items={items.map((i) => i.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="grid gap-4">
-              {items.map((item, index) => (
-                <SortableItem
-                  key={item.id}
-                  id={item.id}
-                  text={item.text}
-                  isSubmitted={isSubmitted}
-                  isCorrect={item.originalIndex === index}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+          {items.map((item, index) => (
+            <SortableItem
+              key={item.id}
+              item={item}
+              isSubmitted={isSubmitted}
+              isCorrect={item.originalIndex === index}
+            />
+          ))}
+        </Reorder.Group>
       </div>
 
       <div className="flex justify-center pt-8">
-        {isSubmitted ? (
-          <div className="space-y-4 w-full text-center">
-            <div
-              className="rounded-2xl bg-card border-2 border-foreground p-6"
-              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+        <AnimatePresence mode="wait">
+          {isSubmitted ? (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-4 w-full text-center"
             >
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-2xl font-black text-foreground">
-                  {score}/100
-                </span>
+              <div className="rounded-2xl bg-card border-2 border-foreground p-6 shadow-[4px_4px_0px_0px_var(--foreground)]">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl font-black text-foreground">
+                    {score}/100
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-sm font-medium">
+                  {score === 100
+                    ? "Perfect sequence! Your context recall is impeccable."
+                    : score >= 50
+                      ? "Good effort. Review this passage again!"
+                      : "You might want to practice this one again."}
+                </p>
               </div>
-              <p className="text-muted-foreground text-sm font-medium">
-                {score === 100
-                  ? "Perfect sequence! Your context recall is impeccable."
-                  : score >= 50
-                    ? "Good effort. Review this passage again!"
-                    : "You might want to practice this one again."}
-              </p>
-            </div>
 
-            <button
-              onClick={() => onComplete(score, items)}
-              className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+              <div className="flex gap-4 w-full">
+                {isPractice && onExit && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={onExit}
+                    className="w-full py-4 rounded-full bg-card text-foreground font-bold text-base border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)]"
+                  >
+                    Go Back
+                  </motion.button>
+                )}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onComplete(score, items)}
+                  className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)]"
+                >
+                  {isPractice ? "Play Again →" : "Complete Drill →"}
+                </motion.button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="submit"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              whileHover={{ y: -4 }}
+              whileTap={{ y: 0 }}
+              onClick={handleSubmit}
+              className="group relative px-10 py-4 bg-primary text-white font-black text-xl rounded-2xl border-2 border-foreground shadow-[0px_8px_0px_0px_var(--foreground)]"
             >
-              Complete Drill →
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            className="group relative px-10 py-4 bg-primary text-white font-black text-xl rounded-2xl border-2 border-foreground hover:translate-y-[-4px] active:translate-y-0 transition-all"
-            style={{
-              boxShadow: "0px 8px 0px 0px var(--foreground)",
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6" />
-              Check Sequence
-            </div>
-          </button>
-        )}
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6" />
+                Check Sequence
+              </div>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

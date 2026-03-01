@@ -70,7 +70,11 @@ export interface RearrangeDrill {
   shuffledVerses: { id: string; text: string; originalIndex: number }[];
 }
 
-export type Drill = MemorizationDrill | ContextChallengeDrill | VerseMatchDrill | RearrangeDrill;
+export type Drill =
+  | MemorizationDrill
+  | ContextChallengeDrill
+  | VerseMatchDrill
+  | RearrangeDrill;
 
 export interface PracticeConfig {
   by: "book" | "chapter" | "theme" | "random";
@@ -112,6 +116,7 @@ export interface BiblePassage {
   book: string;
   chapter: number;
   verses: string;
+  verseTexts?: string[];
 }
 
 export interface ContextQuestion {

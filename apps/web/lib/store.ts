@@ -23,14 +23,14 @@ import {
   BiblePassage,
 } from "./types";
 import { generateDailyWorkout } from "./workout-generator";
-import { 
-  account, 
-  databases, 
-  APPWRITE_DB_ID, 
-  APPWRITE_USERS_COLLECTION_ID, 
+import {
+  account,
+  databases,
+  APPWRITE_DB_ID,
+  APPWRITE_USERS_COLLECTION_ID,
   APPWRITE_MASTERY_COLLECTION_ID,
   APPWRITE_WORKOUTS_COLLECTION_ID,
-  APPWRITE_PRACTICE_COLLECTION_ID
+  APPWRITE_PRACTICE_COLLECTION_ID,
 } from "./appwrite";
 import { OAuthProvider, ID } from "appwrite";
 
@@ -91,21 +91,42 @@ type Action =
   | { type: "JOIN_GROUP"; payload: Group }
   | { type: "SET_GROUP_MEMBERS"; payload: GroupMember[] }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "START_PRACTICE"; payload: { type: "memorization" | "context" | "verse-match" | "rearrange" | "ai-themed", config?: PracticeConfig } }
+  | {
+      type: "START_PRACTICE";
+      payload: {
+        type:
+          | "memorization"
+          | "context"
+          | "verse-match"
+          | "rearrange"
+          | "ai-themed";
+        config?: PracticeConfig;
+      };
+    }
   | { type: "SET_GROUP_CHALLENGE"; payload: Workout }
   | { type: "DELETE_GROUP_CHALLENGE" }
   | {
-    type: "UPDATE_VERSE_MASTERY";
-    payload: { id: string; mastery: VerseMastery };
-  }
+      type: "UPDATE_VERSE_MASTERY";
+      payload: { id: string; mastery: VerseMastery };
+    }
   | {
-    type: "COMPLETE_MASTERY_LEVEL";
-    payload: { id: string; level: MasteryLevel; accuracy: number; time: number };
-  }
+      type: "COMPLETE_MASTERY_LEVEL";
+      payload: {
+        id: string;
+        level: MasteryLevel;
+        accuracy: number;
+        time: number;
+      };
+    }
   | {
-    type: "LOG_PRACTICE_SCORE";
-    payload: { drillType: string; score: number; accuracy: number; config: PracticeConfig | null };
-  }
+      type: "LOG_PRACTICE_SCORE";
+      payload: {
+        drillType: string;
+        score: number;
+        accuracy: number;
+        config: PracticeConfig | null;
+      };
+    }
   | { type: "LOAD_STATE"; payload: Partial<AppState> }
   | { type: "INITIALIZE_APPWRITE_USER"; payload: User };
 
@@ -117,11 +138,12 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, user: action.payload };
 
     case "INITIALIZE_APPWRITE_USER":
-      return { 
-        ...state, 
-        user: action.payload, 
-        isLoading: false, 
-        currentView: state.currentView === "landing" ? "dashboard" : state.currentView
+      return {
+        ...state,
+        user: action.payload,
+        isLoading: false,
+        currentView:
+          state.currentView === "landing" ? "dashboard" : state.currentView,
       };
 
     case "LOGOUT":
@@ -161,7 +183,11 @@ function appReducer(state: AppState, action: Action): AppState {
         workout: {
           ...state.workout,
           scores,
-          totalScore: scores.memorization + scores.context + scores.verseMatch + (scores.rearrange || 0),
+          totalScore:
+            scores.memorization +
+            scores.context +
+            scores.verseMatch +
+            (scores.rearrange || 0),
         },
       };
     }
@@ -197,33 +223,39 @@ function appReducer(state: AppState, action: Action): AppState {
 
       // Sync user data to Appwrite
       if (updatedUser) {
-        databases.updateDocument(
-          APPWRITE_DB_ID,
-          APPWRITE_USERS_COLLECTION_ID,
-          updatedUser.id,
-          {
-            streak: updatedUser.streak,
-            totalScore: updatedUser.totalScore,
-            weeklyScore: updatedUser.weeklyScore,
-            lastWorkoutDate: updatedUser.lastWorkoutDate,
-          }
-        ).catch(e => console.error("Failed to sync user data to Appwrite", e));
+        databases
+          .updateDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_USERS_COLLECTION_ID,
+            updatedUser.id,
+            {
+              streak: updatedUser.streak,
+              totalScore: updatedUser.totalScore,
+              weeklyScore: updatedUser.weeklyScore,
+              lastWorkoutDate: updatedUser.lastWorkoutDate,
+            },
+          )
+          .catch((e) =>
+            console.error("Failed to sync user data to Appwrite", e),
+          );
 
         // Create a record of this daily workout
-        databases.createDocument(
-          APPWRITE_DB_ID,
-          APPWRITE_WORKOUTS_COLLECTION_ID,
-          ID.unique(),
-          {
-            userId: updatedUser.id,
-            date: today,
-            totalScore: state.workout.totalScore,
-            memorizationScore: state.workout.scores.memorization,
-            contextScore: state.workout.scores.context,
-            verseMatchScore: state.workout.scores.verseMatch,
-            rearrangeScore: state.workout.scores.rearrange,
-          }
-        ).catch(e => console.error("Failed to log daily workout", e));
+        databases
+          .createDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_WORKOUTS_COLLECTION_ID,
+            ID.unique(),
+            {
+              userId: updatedUser.id,
+              date: today,
+              totalScore: state.workout.totalScore,
+              memorizationScore: state.workout.scores.memorization,
+              contextScore: state.workout.scores.context,
+              verseMatchScore: state.workout.scores.verseMatch,
+              rearrangeScore: state.workout.scores.rearrange,
+            },
+          )
+          .catch((e) => console.error("Failed to log daily workout", e));
       }
 
       const updatedGroupMembers = state.groupMembers
@@ -293,19 +325,25 @@ function appReducer(state: AppState, action: Action): AppState {
 
     case "LOG_PRACTICE_SCORE": {
       if (state.user) {
-        databases.createDocument(
+        databases
+          .createDocument(
             APPWRITE_DB_ID,
             APPWRITE_PRACTICE_COLLECTION_ID,
             ID.unique(),
             {
-               userId: state.user.id,
-               timestamp: new Date().toISOString(),
-               drillType: action.payload.drillType,
-               score: action.payload.score,
-               accuracy: action.payload.accuracy,
-               config: action.payload.config ? JSON.stringify(action.payload.config) : null
-            }
-        ).catch(e => console.error("Failed to sync practice history to Appwrite", e));
+              userId: state.user.id,
+              timestamp: new Date().toISOString(),
+              drillType: action.payload.drillType,
+              score: action.payload.score,
+              accuracy: action.payload.accuracy,
+              config: action.payload.config
+                ? JSON.stringify(action.payload.config)
+                : null,
+            },
+          )
+          .catch((e) =>
+            console.error("Failed to sync practice history to Appwrite", e),
+          );
 
         const updatedUser: User = {
           ...state.user,
@@ -313,14 +351,18 @@ function appReducer(state: AppState, action: Action): AppState {
         };
 
         // Sync updated score to Appwrite users collection
-        databases.updateDocument(
-          APPWRITE_DB_ID,
-          APPWRITE_USERS_COLLECTION_ID,
-          updatedUser.id,
-          {
-            totalScore: updatedUser.totalScore,
-          }
-        ).catch(e => console.error("Failed to sync user practice score to Appwrite", e));
+        databases
+          .updateDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_USERS_COLLECTION_ID,
+            updatedUser.id,
+            {
+              totalScore: updatedUser.totalScore,
+            },
+          )
+          .catch((e) =>
+            console.error("Failed to sync user practice score to Appwrite", e),
+          );
 
         return {
           ...state,
@@ -384,46 +426,49 @@ function appReducer(state: AppState, action: Action): AppState {
 
       // Sync Mastery to Appwrite
       if (state.user) {
-          databases.getDocument(
-             APPWRITE_DB_ID,
-             APPWRITE_MASTERY_COLLECTION_ID,
-             `${state.user!.id}_${id}`
-          ).then(() => {
-              // Update existing
-              return databases.updateDocument(
+        databases
+          .getDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_MASTERY_COLLECTION_ID,
+            `${state.user!.id}_${id}`,
+          )
+          .then(() => {
+            // Update existing
+            return databases.updateDocument(
+              APPWRITE_DB_ID,
+              APPWRITE_MASTERY_COLLECTION_ID,
+              `${state.user!.id}_${id}`,
+              {
+                currentLevel: updatedMastery.currentLevel,
+                bestAccuracy: updatedMastery.bestAccuracy,
+                bestTime: updatedMastery.bestTime,
+                status: updatedMastery.status,
+                lastPracticed: updatedMastery.lastPracticed,
+              },
+            );
+          })
+          .catch((e) => {
+            // Document might not exist, create it
+            if (e.code === 404) {
+              return databases.createDocument(
                 APPWRITE_DB_ID,
                 APPWRITE_MASTERY_COLLECTION_ID,
-                `${state.user!.id}_${id}`,
+                `${state.user!.id}_${id}`, // Predictable composite ID
                 {
-                   currentLevel: updatedMastery.currentLevel,
-                   bestAccuracy: updatedMastery.bestAccuracy,
-                   bestTime: updatedMastery.bestTime,
-                   status: updatedMastery.status,
-                   lastPracticed: updatedMastery.lastPracticed,
-                }
+                  userId: state.user!.id,
+                  referenceId: id,
+                  passageReference: updatedMastery.passage.reference,
+                  passageText: updatedMastery.passage.text,
+                  currentLevel: updatedMastery.currentLevel,
+                  bestAccuracy: updatedMastery.bestAccuracy,
+                  bestTime: updatedMastery.bestTime,
+                  status: updatedMastery.status,
+                  lastPracticed: updatedMastery.lastPracticed,
+                },
               );
-          }).catch((e) => {
-              // Document might not exist, create it
-              if (e.code === 404) {
-                 return databases.createDocument(
-                   APPWRITE_DB_ID,
-                   APPWRITE_MASTERY_COLLECTION_ID,
-                   `${state.user!.id}_${id}`, // Predictable composite ID
-                 {
-                    userId: state.user!.id,
-                    referenceId: id,
-                    passageReference: updatedMastery.passage.reference,
-                    passageText: updatedMastery.passage.text,
-                    currentLevel: updatedMastery.currentLevel,
-                    bestAccuracy: updatedMastery.bestAccuracy,
-                    bestTime: updatedMastery.bestTime,
-                    status: updatedMastery.status,
-                    lastPracticed: updatedMastery.lastPracticed,
-                 }
-               );
             }
             console.error("Failed to sync mastery to Appwrite", e);
-        });
+          });
       }
 
       return {
@@ -472,7 +517,7 @@ export function useAuth() {
       await account.createOAuth2Session(
         OAuthProvider.Google,
         `${window.location.origin}/dashboard`,
-        `${window.location.origin}/`
+        `${window.location.origin}/`,
       );
     } catch (error) {
       console.error("Google login failed", error);
@@ -502,7 +547,7 @@ export function useWorkout() {
   const router = useRouter();
 
   const startWorkout = async (aiDrill?: Workout["drills"][0]) => {
-    const workout = generateDailyWorkout(state.user?.id);
+    const workout = await generateDailyWorkout(state.user?.id);
     if (aiDrill) {
       // Replace one random drill with the AI one
       const randomIndex = Math.floor(Math.random() * 3);
@@ -522,7 +567,10 @@ export function useWorkout() {
   };
 
   const nextDrill = () => {
-    if (state.workout && state.currentDrillIndex < state.workout.drills.length - 1) {
+    if (
+      state.workout &&
+      state.currentDrillIndex < state.workout.drills.length - 1
+    ) {
       dispatch({ type: "NEXT_DRILL" });
     } else {
       dispatch({ type: "COMPLETE_WORKOUT" });
@@ -545,7 +593,15 @@ export function usePractice() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const startPractice = (type: "memorization" | "context" | "verse-match" | "rearrange" | "ai-themed", config?: PracticeConfig) => {
+  const startPractice = (
+    type:
+      | "memorization"
+      | "context"
+      | "verse-match"
+      | "rearrange"
+      | "ai-themed",
+    config?: PracticeConfig,
+  ) => {
     dispatch({ type: "START_PRACTICE", payload: { type, config } });
     router.push("/practice");
   };
@@ -556,14 +612,14 @@ export function usePractice() {
 
   const logPractice = (score: number, accuracy: number = score) => {
     if (!state.practiceDrillType) return;
-    dispatch({ 
-      type: "LOG_PRACTICE_SCORE", 
-      payload: { 
-        drillType: state.practiceDrillType, 
-        score, 
-        accuracy, 
-        config: state.practiceConfig 
-      } 
+    dispatch({
+      type: "LOG_PRACTICE_SCORE",
+      payload: {
+        drillType: state.practiceDrillType,
+        score,
+        accuracy,
+        config: state.practiceConfig,
+      },
     });
   };
 
@@ -702,7 +758,13 @@ function generateMockLeaderboard(
   user: User,
   _group: Group,
 ) {
-  const mockNames = ["Sarah K.", "David M.", "Ruth O.", "James L.", "Esther A."];
+  const mockNames = [
+    "Sarah K.",
+    "David M.",
+    "Ruth O.",
+    "James L.",
+    "Esther A.",
+  ];
 
   const members: GroupMember[] = [
     {
@@ -763,7 +825,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const profile = await databases.getDocument(
               APPWRITE_DB_ID,
               APPWRITE_USERS_COLLECTION_ID,
-              currentAccount.$id
+              currentAccount.$id,
             );
 
             // Helper for weekly resets
@@ -772,7 +834,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const day = d.getDay();
               const diff = d.getDate() - day + (day === 0 ? -6 : 1);
               d.setDate(diff);
-              d.setHours(0,0,0,0);
+              d.setHours(0, 0, 0, 0);
               return d;
             };
 
@@ -798,28 +860,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
             };
 
             // Check if we need to reset the weekly score
-            if (!user.lastWeeklyReset || new Date(user.lastWeeklyReset) < currentStartOfWeek) {
+            if (
+              !user.lastWeeklyReset ||
+              new Date(user.lastWeeklyReset) < currentStartOfWeek
+            ) {
               user.weeklyScore = 0;
               user.lastWeeklyReset = new Date().toISOString();
-              
+
               // Sync reset to Appwrite
-              databases.updateDocument(
-                APPWRITE_DB_ID,
-                APPWRITE_USERS_COLLECTION_ID,
-                user.id,
-                {
-                  weeklyScore: 0,
-                  lastWeeklyReset: user.lastWeeklyReset,
-                }
-              ).catch(e => console.error("Failed to sync weekly reset", e));
+              databases
+                .updateDocument(
+                  APPWRITE_DB_ID,
+                  APPWRITE_USERS_COLLECTION_ID,
+                  user.id,
+                  {
+                    weeklyScore: 0,
+                    lastWeeklyReset: user.lastWeeklyReset,
+                  },
+                )
+                .catch((e) => console.error("Failed to sync weekly reset", e));
             }
 
             dispatch({ type: "INITIALIZE_APPWRITE_USER", payload: user });
-
           } catch (e: any) {
             // If profile doesn't exist, create one
             if (e.code === 404) {
-               const newUser: User = {
+              const newUser: User = {
                 id: currentAccount.$id,
                 name: currentAccount.name,
                 email: currentAccount.email,
@@ -840,23 +906,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
               try {
                 await databases.createDocument(
-                    APPWRITE_DB_ID,
-                    APPWRITE_USERS_COLLECTION_ID,
-                    currentAccount.$id,
-                    {
-                        name: newUser.name,
-                        email: newUser.email,
-                        streak: newUser.streak,
-                        totalScore: newUser.totalScore,
-                        weeklyScore: newUser.weeklyScore,
-                        lastWeeklyReset: newUser.lastWeeklyReset,
-                        lastWorkoutDate: newUser.lastWorkoutDate,
-                        groupId: newUser.groupId
-                    }
+                  APPWRITE_DB_ID,
+                  APPWRITE_USERS_COLLECTION_ID,
+                  currentAccount.$id,
+                  {
+                    name: newUser.name,
+                    email: newUser.email,
+                    streak: newUser.streak,
+                    totalScore: newUser.totalScore,
+                    weeklyScore: newUser.weeklyScore,
+                    lastWeeklyReset: newUser.lastWeeklyReset,
+                    lastWorkoutDate: newUser.lastWorkoutDate,
+                    groupId: newUser.groupId,
+                  },
                 );
-                dispatch({ type: "INITIALIZE_APPWRITE_USER", payload: newUser });
+                dispatch({
+                  type: "INITIALIZE_APPWRITE_USER",
+                  payload: newUser,
+                });
               } catch (createError) {
-                console.error("Failed to create new user document in Appwrite", createError);
+                console.error(
+                  "Failed to create new user document in Appwrite",
+                  createError,
+                );
                 dispatch({ type: "SET_LOADING", payload: false });
               }
             } else {
@@ -865,7 +937,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           }
 
-          // Optional: Load mastery data from Appwrite here if needed, 
+          // Optional: Load mastery data from Appwrite here if needed,
           // or rely on local storage for now until explicitly synced.
           // For a full implementation, you'd fetch the mastery collection using `Query.equal('userId', currentAccount.$id)`
         } else {
@@ -916,7 +988,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     React.createElement(
       AppDispatchContext.Provider,
       { value: dispatch },
-      children
-    )
+      children,
+    ),
   );
 }
