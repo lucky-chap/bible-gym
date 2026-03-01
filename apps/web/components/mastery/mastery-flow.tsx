@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { BiblePassage, MasteryLevel } from "@/lib/types";
 import { useMastery } from "@/lib/store";
 import {
@@ -26,14 +26,50 @@ interface Props {
 export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
   const { completeLevel } = useMastery();
   const [currentLevel, setCurrentLevel] = useState<MasteryLevel>(initialLevel);
-  const [userInput, setUserInput] = useState("");
+  const [answers, setAnswers] = useState<Record<number, string>>({});
   const [startTime, setStartTime] = useState(Date.now());
   const [submitted, setSubmitted] = useState(false);
   const [accuracy, setAccuracy] = useState(0);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  const words = useMemo(() => passage.text.split(/\s+/), [passage.text]);
+
+  const blankedIndices = useMemo(() => {
+    const seed = passage.reference.length; // consistent random
+    const indices = new Set<number>();
+
+    if (currentLevel === 1) return indices;
+
+    if (currentLevel === 2 || currentLevel === 3) {
+      const percentage = currentLevel === 2 ? 0.25 : 0.5;
+      words.forEach((_, i) => {
+        // pseudo-random based on index and seed
+        const random = ((i * 1337 + seed) % 100) / 100;
+        if (random < percentage) {
+          indices.add(i);
+        }
+      });
+    } else if (currentLevel === 4 || currentLevel === 5) {
+      words.forEach((_, i) => indices.add(i));
+    }
+
+    return indices;
+  }, [currentLevel, passage.reference, words]);
+
+  const firstBlankIndex = useMemo(() => {
+    const indices = Array.from(blankedIndices);
+    if (indices.length === 0) return -1;
+    return Math.min(...indices);
+  }, [blankedIndices]);
+
+  useEffect(() => {
+    if (!submitted && firstBlankIndex !== -1) {
+      inputRefs.current[firstBlankIndex]?.focus();
+    }
+  }, [currentLevel, firstBlankIndex, submitted]);
 
   const CircularProgress = ({
     value,
@@ -111,44 +147,25 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
 
   const currentLevelInfo = LEVELS[currentLevel - 1];
 
-  // Helper: Prepare verse text with blanks or first letters
-  const prepareDisplay = () => {
-    const words = passage.text.split(/\s+/);
+  const formatWordForDisplay = (word: string) => {
+    if (currentLevel !== 4) return "";
 
-    if (currentLevel === 1) return passage.text;
+    const cleanWord = word.replace(/[^a-zA-Z]/g, "");
+    if (cleanWord.length <= 0) return word;
 
-    if (currentLevel === 2 || currentLevel === 3) {
-      const percentage = currentLevel === 2 ? 0.25 : 0.5;
-      const seed = passage.reference.length; // consistent random
-      return words
-        .map((word, i) => {
-          // pseudo-random based on index and seed
-          const random = ((i * 1337 + seed) % 100) / 100;
-          if (random < percentage) {
-            return "____";
-          }
-          return word;
-        })
-        .join(" ");
-    }
+    const firstLetterMatch = word.match(/[a-zA-Z]/);
+    if (!firstLetterMatch) return word;
 
-    if (currentLevel === 4) {
-      return words
-        .map((word) => {
-          const match = word.match(/[a-zA-Z]/);
-          if (match) {
-            return match[0] + "_".repeat(word.length - 1);
-          }
-          return word;
-        })
-        .join(" ");
-    }
+    const firstCharIndex = word.indexOf(firstLetterMatch[0]);
+    const firstLetter = word.charAt(firstCharIndex);
+    const leadingPunctuation = word.substring(0, firstCharIndex);
 
-    if (currentLevel === 5) {
-      return ""; // Blank for full recall
-    }
+    const trailingPunctuationMatch = word.match(/[^a-zA-Z]+$/);
+    const trailingPunctuation = trailingPunctuationMatch
+      ? trailingPunctuationMatch[0]
+      : "";
 
-    return passage.text;
+    return leadingPunctuation + firstLetter + "_" + trailingPunctuation;
   };
 
   const calculateAccuracy = (input: string, target: string) => {
@@ -169,7 +186,11 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
   };
 
   const handleSubmit = () => {
-    const acc = calculateAccuracy(userInput, passage.text);
+    const fullInput = words
+      .map((word, i) => (blankedIndices.has(i) ? answers[i] || "" : word))
+      .join(" ");
+
+    const acc = calculateAccuracy(fullInput, passage.text);
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
 
     setAccuracy(acc);
@@ -184,6 +205,32 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
     }
   };
 
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    currentIndex: number,
+  ) => {
+    if (e.key === "Tab" || e.key === "Enter") {
+      e.preventDefault();
+
+      const sortedBlanks = Array.from(blankedIndices).sort((a, b) => a - b);
+      const currentPos = sortedBlanks.indexOf(currentIndex);
+      const nextIndex = sortedBlanks[currentPos + 1];
+
+      if (nextIndex !== undefined && inputRefs.current[nextIndex]) {
+        inputRefs.current[nextIndex]?.focus();
+      } else if (e.key === "Enter") {
+        handleSubmit();
+      }
+    }
+  };
+
+  const updateAnswer = (index: number, value: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [index]: value,
+    }));
+  };
+
   const nextLevel = () => {
     if (showSuccess) {
       router.push("/dashboard");
@@ -192,7 +239,7 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
 
     if (currentLevel < 5) {
       setCurrentLevel((prev) => (prev + 1) as MasteryLevel);
-      setUserInput("");
+      setAnswers({});
       setSubmitted(false);
       setIsCorrect(null);
       setStartTime(Date.now());
@@ -202,7 +249,7 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
   };
 
   const resetLevel = () => {
-    setUserInput("");
+    setAnswers({});
     setSubmitted(false);
     setIsCorrect(null);
     setStartTime(Date.now());
@@ -266,25 +313,39 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
             </div>
           ) : (
             <div className="space-y-6">
-              {!submitted && currentLevel !== 5 && (
-                <div className="text-xl font-bold leading-relaxed text-center text-muted-foreground/40 italic select-none">
-                  {prepareDisplay()}
-                </div>
-              )}
-
               {!submitted ? (
-                <textarea
-                  ref={inputRef}
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  placeholder={
-                    currentLevel === 5
-                      ? "Type the entire verse here..."
-                      : "Type the hidden words..."
-                  }
-                  className="w-full min-h-[150px] p-4 bg-background rounded-xl border-2 border-foreground text-foreground font-bold text-xl resize-none focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all"
-                  autoFocus
-                />
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-4 text-center justify-center py-4">
+                  {words.map((word, i) => {
+                    if (blankedIndices.has(i)) {
+                      return (
+                        <input
+                          key={i}
+                          ref={(el) => {
+                            inputRefs.current[i] = el;
+                          }}
+                          type="text"
+                          value={answers[i] || ""}
+                          onChange={(e) => updateAnswer(i, e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, i)}
+                          className="w-28 md:w-40 px-3 py-1.5 rounded-xl text-2xl font-bold text-center bg-background border-2 border-foreground focus:ring-4 focus:ring-primary/20 outline-none transition-all"
+                          placeholder={
+                            currentLevel === 4
+                              ? formatWordForDisplay(word)
+                              : "___"
+                          }
+                        />
+                      );
+                    }
+                    return (
+                      <span
+                        key={i}
+                        className="text-2xl font-bold leading-relaxed"
+                      >
+                        {word}
+                      </span>
+                    );
+                  })}
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 bg-muted rounded-xl border-2 border-foreground/10">
@@ -302,7 +363,9 @@ export function MasteryFlow({ passage, initialLevel = 1 }: Props) {
                       Your Recall ({accuracy}%)
                     </div>
                     <div className="text-lg font-bold">
-                      {userInput || "(No input)"}
+                      {words
+                        .map((w, i) => (blankedIndices.has(i) ? answers[i] : w))
+                        .join(" ") || "(No input)"}
                     </div>
                   </div>
                 </div>

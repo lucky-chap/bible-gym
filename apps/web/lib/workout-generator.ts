@@ -11,10 +11,10 @@ import {
   Workout,
 } from "./types";
 
-function shuffleArray<T>(arr: T[]): T[] {
+function shuffleArray<T>(arr: T[], rng?: () => number): T[] {
   const shuffled = [...arr];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor((rng ? rng() : Math.random()) * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
@@ -37,9 +37,19 @@ function getDaySeed(): number {
   );
 }
 
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 // Generate a memorization drill from passages
 export function generateMemorizationDrill(
-  passages: (typeof BIBLE_PASSAGES)[number][]
+  passages: (typeof BIBLE_PASSAGES)[number][],
+  rng: () => number,
 ): MemorizationDrill {
   const questions = passages.map((passage, pIndex) => {
     const words = passage.text.split(" ");
@@ -49,7 +59,7 @@ export function generateMemorizationDrill(
       .map((w, i) => ({ word: w, index: i }))
       .filter((w) => w.word.replace(/[^a-zA-Z]/g, "").length > 2);
 
-    const shuffledEligible = shuffleArray(eligibleIndices);
+    const shuffledEligible = shuffleArray(eligibleIndices, rng);
     const blankedWords = shuffledEligible.slice(0, numBlanks).map((w) => ({
       index: w.index,
       word: w.word,
@@ -70,7 +80,8 @@ export function generateMemorizationDrill(
 
 // Generate a context challenge drill
 export function generateContextDrill(
-  passages: (typeof BIBLE_PASSAGES)[number][]
+  passages: (typeof BIBLE_PASSAGES)[number][],
+  rng: () => number,
 ): ContextChallengeDrill {
   const questions = passages.map((passage, pIndex) => {
     const relevantQuestions = CONTEXT_QUESTIONS.filter(
@@ -79,8 +90,8 @@ export function generateContextDrill(
 
     const question =
       relevantQuestions.length > 0
-        ? relevantQuestions[Math.floor(Math.random() * relevantQuestions.length)]
-        : CONTEXT_QUESTIONS[Math.floor(Math.random() * CONTEXT_QUESTIONS.length)];
+        ? relevantQuestions[Math.floor(rng() * relevantQuestions.length)]
+        : CONTEXT_QUESTIONS[Math.floor(rng() * CONTEXT_QUESTIONS.length)];
 
     return {
       id: `ctx-${pIndex}`,
@@ -98,8 +109,8 @@ export function generateContextDrill(
 }
 
 // Generate a verse match drill
-export function generateVerseMatchDrill(): VerseMatchDrill {
-  const shuffled = shuffleArray(VERSE_MATCH_ITEMS);
+export function generateVerseMatchDrill(rng: () => number): VerseMatchDrill {
+  const shuffled = shuffleArray(VERSE_MATCH_ITEMS, rng);
   const selected = shuffled.slice(0, 3); // 3 pairs to match (3 questions)
 
   return {
@@ -113,12 +124,13 @@ export function generateVerseMatchDrill(): VerseMatchDrill {
 
 // Generate a rearrange drill
 export function generateRearrangeDrill(
-  passages: (typeof BIBLE_PASSAGES)[number][]
+  passages: (typeof BIBLE_PASSAGES)[number][],
+  rng: () => number,
 ): RearrangeDrill {
   // Pick a passage with multiple sentences/verses
   const multiVersePassages = passages.filter((p) => p.text.includes(".") || p.text.includes(";"));
   const passage = multiVersePassages.length > 0
-    ? multiVersePassages[Math.floor(Math.random() * multiVersePassages.length)]
+    ? multiVersePassages[Math.floor(rng() * multiVersePassages.length)]
     : passages[0];
 
   // Split into units (sentences or verses)
@@ -134,27 +146,28 @@ export function generateRearrangeDrill(
   return {
     type: "rearrange",
     passage,
-    shuffledVerses: shuffleArray(units),
+    shuffledVerses: shuffleArray(units, rng),
   };
 }
 
 // Generate today's workout
-export function generateDailyWorkout(): Workout {
+export function generateDailyWorkout(userId?: string): Workout {
   const seed = getDaySeed();
-  const rng = seededRandom(seed);
+  const finalSeed = userId ? seed + hashString(userId) : seed;
+  const rng = seededRandom(finalSeed);
 
   // Pick 3 passages for today based on the day
   const passageIndices = [0, 1, 2].map(() => Math.floor(rng() * BIBLE_PASSAGES.length));
   const selectedPassages = passageIndices.map((index) => BIBLE_PASSAGES[index]);
 
   const workout: Workout = {
-    id: `workout-${seed}`,
+    id: `workout-${finalSeed}`,
     date: new Date().toISOString().split("T")[0],
     drills: [
-      generateMemorizationDrill(selectedPassages),
-      generateContextDrill(selectedPassages),
-      generateVerseMatchDrill(),
-      generateRearrangeDrill(selectedPassages),
+      generateMemorizationDrill(selectedPassages, rng),
+      generateContextDrill(selectedPassages, rng),
+      generateVerseMatchDrill(rng),
+      generateRearrangeDrill(selectedPassages, rng),
     ],
     completed: false,
     scores: {

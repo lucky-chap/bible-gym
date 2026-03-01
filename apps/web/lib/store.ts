@@ -359,7 +359,7 @@ export function useWorkout() {
   const router = useRouter();
 
   const startWorkout = async (aiDrill?: Workout["drills"][0]) => {
-    const workout = generateDailyWorkout();
+    const workout = generateDailyWorkout(state.user?.id);
     if (aiDrill) {
       // Replace one random drill with the AI one
       const randomIndex = Math.floor(Math.random() * 3);
