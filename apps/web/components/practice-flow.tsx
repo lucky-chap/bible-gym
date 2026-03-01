@@ -12,7 +12,8 @@ import { generatePracticeDrillAction } from "@/app/actions/practice-drills";
 import { Loader2 } from "lucide-react";
 
 export function PracticeFlow() {
-  const { practiceDrillType, practiceConfig, exitPractice } = usePractice();
+  const { practiceDrillType, practiceConfig, exitPractice, logPractice } =
+    usePractice();
   const [currentDrill, setCurrentDrill] = useState<Drill | null>(null);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
@@ -80,8 +81,9 @@ export function PracticeFlow() {
 
   if (!practiceDrillType) return null;
 
-  const handleDrillComplete = (_score: number) => {
+  const handleDrillComplete = (score: number) => {
     hasGeneratedRef.current = true; // allow next generation
+    logPractice(score);
     generateNewDrill(practiceDrillType, practiceConfig);
   };
 

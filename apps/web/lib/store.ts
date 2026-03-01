@@ -23,6 +23,16 @@ import {
   BiblePassage,
 } from "./types";
 import { generateDailyWorkout } from "./workout-generator";
+import { 
+  account, 
+  databases, 
+  APPWRITE_DB_ID, 
+  APPWRITE_USERS_COLLECTION_ID, 
+  APPWRITE_MASTERY_COLLECTION_ID,
+  APPWRITE_WORKOUTS_COLLECTION_ID,
+  APPWRITE_PRACTICE_COLLECTION_ID
+} from "./appwrite";
+import { OAuthProvider, ID } from "appwrite";
 
 // ── State Shape ─────────────────────────────────────────────
 
@@ -92,7 +102,12 @@ type Action =
     type: "COMPLETE_MASTERY_LEVEL";
     payload: { id: string; level: MasteryLevel; accuracy: number; time: number };
   }
-  | { type: "LOAD_STATE"; payload: Partial<AppState> };
+  | {
+    type: "LOG_PRACTICE_SCORE";
+    payload: { drillType: string; score: number; accuracy: number; config: PracticeConfig | null };
+  }
+  | { type: "LOAD_STATE"; payload: Partial<AppState> }
+  | { type: "INITIALIZE_APPWRITE_USER"; payload: User };
 
 // ── Reducer ─────────────────────────────────────────────────
 
@@ -100,6 +115,14 @@ function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_USER":
       return { ...state, user: action.payload };
+
+    case "INITIALIZE_APPWRITE_USER":
+      return { 
+        ...state, 
+        user: action.payload, 
+        isLoading: false, 
+        currentView: state.currentView === "landing" ? "dashboard" : state.currentView
+      };
 
     case "LOGOUT":
       return { ...initialState, isLoading: false, currentView: "landing" };
@@ -167,6 +190,36 @@ function appReducer(state: AppState, action: Action): AppState {
         lastWorkoutDate: today,
       };
 
+      // Sync user data to Appwrite
+      if (updatedUser) {
+        databases.updateDocument(
+          APPWRITE_DB_ID,
+          APPWRITE_USERS_COLLECTION_ID,
+          updatedUser.id,
+          {
+            streak: updatedUser.streak,
+            totalScore: updatedUser.totalScore,
+            lastWorkoutDate: updatedUser.lastWorkoutDate,
+          }
+        ).catch(e => console.error("Failed to sync user data to Appwrite", e));
+
+        // Create a record of this daily workout
+        databases.createDocument(
+          APPWRITE_DB_ID,
+          APPWRITE_WORKOUTS_COLLECTION_ID,
+          ID.unique(),
+          {
+            userId: updatedUser.id,
+            date: today,
+            totalScore: state.workout.totalScore,
+            memorizationScore: state.workout.scores.memorization,
+            contextScore: state.workout.scores.context,
+            verseMatchScore: state.workout.scores.verseMatch,
+            rearrangeScore: state.workout.scores.rearrange,
+          }
+        ).catch(e => console.error("Failed to log daily workout", e));
+      }
+
       const updatedGroupMembers = state.groupMembers
         .map((m) =>
           m.userId === updatedUser.id
@@ -232,6 +285,25 @@ function appReducer(state: AppState, action: Action): AppState {
         practiceConfig: action.payload.config || null,
       };
 
+    case "LOG_PRACTICE_SCORE": {
+      if (state.user) {
+        databases.createDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_PRACTICE_COLLECTION_ID,
+            ID.unique(),
+            {
+               userId: state.user.id,
+               timestamp: new Date().toISOString(),
+               drillType: action.payload.drillType,
+               score: action.payload.score,
+               accuracy: action.payload.accuracy,
+               config: action.payload.config ? JSON.stringify(action.payload.config) : null
+            }
+        ).catch(e => console.error("Failed to sync practice history to Appwrite", e));
+      }
+      return state;
+    }
+
     case "SET_GROUP_CHALLENGE": {
       if (!state.user?.groupId) return state;
       const updatedGroups = state.groups.map((g) =>
@@ -284,6 +356,50 @@ function appReducer(state: AppState, action: Action): AppState {
         updatedStats.totalMastered += 1;
       }
 
+      // Sync Mastery to Appwrite
+      if (state.user) {
+          databases.getDocument(
+             APPWRITE_DB_ID,
+             APPWRITE_MASTERY_COLLECTION_ID,
+             `${state.user!.id}_${id}`
+          ).then(() => {
+              // Update existing
+              return databases.updateDocument(
+                APPWRITE_DB_ID,
+                APPWRITE_MASTERY_COLLECTION_ID,
+                `${state.user!.id}_${id}`,
+                {
+                   currentLevel: updatedMastery.currentLevel,
+                   bestAccuracy: updatedMastery.bestAccuracy,
+                   bestTime: updatedMastery.bestTime,
+                   status: updatedMastery.status,
+                   lastPracticed: updatedMastery.lastPracticed,
+                }
+              );
+          }).catch((e) => {
+              // Document might not exist, create it
+              if (e.code === 404) {
+                 return databases.createDocument(
+                   APPWRITE_DB_ID,
+                   APPWRITE_MASTERY_COLLECTION_ID,
+                   `${state.user!.id}_${id}`, // Predictable composite ID
+                 {
+                    userId: state.user!.id,
+                    referenceId: id,
+                    passageReference: updatedMastery.passage.reference,
+                    passageText: updatedMastery.passage.text,
+                    currentLevel: updatedMastery.currentLevel,
+                    bestAccuracy: updatedMastery.bestAccuracy,
+                    bestTime: updatedMastery.bestTime,
+                    status: updatedMastery.status,
+                    lastPracticed: updatedMastery.lastPracticed,
+                 }
+               );
+            }
+            console.error("Failed to sync mastery to Appwrite", e);
+        });
+      }
+
       return {
         ...state,
         verseMastery: {
@@ -296,6 +412,9 @@ function appReducer(state: AppState, action: Action): AppState {
 
     case "LOAD_STATE":
       return { ...state, ...action.payload, isLoading: false };
+
+    case "INITIALIZE_APPWRITE_USER":
+      return { ...state, user: action.payload, isLoading: false };
 
     default:
       return state;
@@ -322,31 +441,29 @@ export function useAuth() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const login = (name: string, email: string) => {
-    const user: User = {
-      id: `user-${Date.now()}`,
-      name,
-      email,
-      avatarInitials: name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2),
-      streak: 0,
-      totalScore: 0,
-      lastWorkoutDate: null,
-      groupId: null,
-      createdAt: new Date().toISOString(),
-    };
-    dispatch({ type: "SET_USER", payload: user });
-    router.push("/dashboard");
+  const login = async () => {
+    try {
+      await account.createOAuth2Session(
+        OAuthProvider.Google,
+        `${window.location.origin}/dashboard`,
+        `${window.location.origin}/`
+      );
+    } catch (error) {
+      console.error("Google login failed", error);
+    }
   };
 
-  const logout = () => {
-    dispatch({ type: "LOGOUT" });
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("bible-gym-state");
+  const logout = async () => {
+    try {
+      await account.deleteSession("current");
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      dispatch({ type: "LOGOUT" });
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("bible-gym-state");
+      }
+      router.push("/");
     }
   };
 
@@ -411,11 +528,25 @@ export function usePractice() {
     router.push("/dashboard");
   };
 
+  const logPractice = (score: number, accuracy: number = score) => {
+    if (!state.practiceDrillType) return;
+    dispatch({ 
+      type: "LOG_PRACTICE_SCORE", 
+      payload: { 
+        drillType: state.practiceDrillType, 
+        score, 
+        accuracy, 
+        config: state.practiceConfig 
+      } 
+    });
+  };
+
   return {
     practiceDrillType: state.practiceDrillType,
     practiceConfig: state.practiceConfig,
     startPractice,
     exitPractice,
+    logPractice,
   };
 }
 
@@ -575,36 +706,117 @@ function generateMockLeaderboard(
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount and check Appwrite session
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("bible-gym-state");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        dispatch({
-          type: "LOAD_STATE",
-          payload: {
-            user: parsed.user,
-            groups: parsed.groups || [],
-            groupMembers: parsed.groupMembers || [],
-            workout: parsed.workout || null,
-            currentDrillIndex: parsed.currentDrillIndex || 0,
-            practiceDrillType: parsed.practiceDrillType || null,
-            practiceConfig: parsed.practiceConfig || null,
-            verseMastery: parsed.verseMastery || {},
-            masteryStats: parsed.masteryStats || initialState.masteryStats,
-          } as Partial<AppState>,
-        });
+    const initApp = async () => {
+      try {
+        // 1. Try to restore local UI state first (fast)
+        const saved = localStorage.getItem("bible-gym-state");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          dispatch({
+            type: "LOAD_STATE",
+            payload: {
+              groups: parsed.groups || [],
+              groupMembers: parsed.groupMembers || [],
+              workout: parsed.workout || null,
+              currentDrillIndex: parsed.currentDrillIndex || 0,
+              practiceDrillType: parsed.practiceDrillType || null,
+              practiceConfig: parsed.practiceConfig || null,
+              verseMastery: parsed.verseMastery || {},
+              masteryStats: parsed.masteryStats || initialState.masteryStats,
+            } as Partial<AppState>,
+          });
+        }
 
-        // Let the layout check if we need to redirect due to auth status
-        // But disable loading regardless
-        dispatch({ type: "SET_LOADING", payload: false });
-      } else {
+        // 2. Check Appwrite for active session (source of truth)
+        const currentAccount = await account.get();
+        if (currentAccount) {
+          try {
+            // Attempt to load the user's DB profile
+            const profile = await databases.getDocument(
+              APPWRITE_DB_ID,
+              APPWRITE_USERS_COLLECTION_ID,
+              currentAccount.$id
+            );
+
+            const user: User = {
+              id: currentAccount.$id,
+              name: currentAccount.name,
+              email: currentAccount.email,
+              avatarInitials: currentAccount.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2),
+              streak: profile.streak || 0,
+              totalScore: profile.totalScore || 0,
+              lastWorkoutDate: profile.lastWorkoutDate || null,
+              groupId: profile.groupId || null,
+              createdAt: currentAccount.$createdAt,
+            };
+            dispatch({ type: "INITIALIZE_APPWRITE_USER", payload: user });
+
+          } catch (e: any) {
+            // If profile doesn't exist, create one
+            if (e.code === 404) {
+               const newUser: User = {
+                id: currentAccount.$id,
+                name: currentAccount.name,
+                email: currentAccount.email,
+                avatarInitials: currentAccount.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2),
+                streak: 0,
+                totalScore: 0,
+                lastWorkoutDate: null,
+                groupId: null,
+                createdAt: currentAccount.$createdAt,
+              };
+
+              try {
+                await databases.createDocument(
+                    APPWRITE_DB_ID,
+                    APPWRITE_USERS_COLLECTION_ID,
+                    currentAccount.$id,
+                    {
+                        name: newUser.name,
+                        email: newUser.email,
+                        streak: newUser.streak,
+                        totalScore: newUser.totalScore,
+                        lastWorkoutDate: newUser.lastWorkoutDate,
+                        groupId: newUser.groupId
+                    }
+                );
+                dispatch({ type: "INITIALIZE_APPWRITE_USER", payload: newUser });
+              } catch (createError) {
+                console.error("Failed to create new user document in Appwrite", createError);
+                dispatch({ type: "SET_LOADING", payload: false });
+              }
+            } else {
+              console.error("Error fetching user profile", e);
+              dispatch({ type: "SET_LOADING", payload: false });
+            }
+          }
+
+          // Optional: Load mastery data from Appwrite here if needed, 
+          // or rely on local storage for now until explicitly synced.
+          // For a full implementation, you'd fetch the mastery collection using `Query.equal('userId', currentAccount.$id)`
+        } else {
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
+      } catch (error) {
+        // No valid Appwrite session (e.g., AppwriteException: User (role: guests) missing scope)
+        console.log("No active Appwrite session found.", error);
         dispatch({ type: "SET_LOADING", payload: false });
       }
-    } catch {
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
+    };
+
+    initApp();
   }, []);
 
   // Persist to localStorage on state changes

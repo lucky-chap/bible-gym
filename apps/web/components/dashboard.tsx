@@ -36,7 +36,33 @@ export function Dashboard() {
   const [showMasterySelector, setShowMasterySelector] = useState(false);
   const router = useRouter();
 
-  if (!user) return null;
+  if (state.isLoading) {
+    return (
+      <div className="w-full flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 md:w-12 md:h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-20 text-center space-y-4 px-6 md:px-0">
+        <h2 className="text-2xl md:text-3xl font-black text-foreground">
+          Session Expired
+        </h2>
+        <p className="text-muted-foreground font-bold">
+          Please log in to view your dashboard.
+        </p>
+        <button
+          onClick={() => router.push("/")}
+          className="px-6 py-3 bg-primary text-white font-bold rounded-xl border-2 border-foreground hover:-translate-y-1 hover:-translate-x-1 transition-transform"
+          style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+        >
+          Return Home
+        </button>
+      </div>
+    );
+  }
 
   const today = new Date().toISOString().split("T")[0];
   const hasCompletedToday = user.lastWorkoutDate === today;
