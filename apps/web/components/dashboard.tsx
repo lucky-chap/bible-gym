@@ -36,7 +36,7 @@ export function Dashboard() {
   const [showMasterySelector, setShowMasterySelector] = useState(false);
   const router = useRouter();
 
-  if (state.isLoading) {
+  if (state.isLoading || !user) {
     return (
       <div className="w-full flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 md:w-12 md:h-12 animate-spin text-primary" />
@@ -44,7 +44,7 @@ export function Dashboard() {
     );
   }
 
-  if (!user) {
+  if (!state.isLoading && !user) {
     return (
       <div className="w-full flex flex-col items-center justify-center py-20 text-center space-y-4 px-6 md:px-0">
         <h2 className="text-2xl md:text-3xl font-black text-foreground">
@@ -173,11 +173,11 @@ export function Dashboard() {
                   <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight">
                     {hasCompletedToday
                       ? "Rest Day in Progress"
-                      : "Master Your Verse\nof the Day"}
+                      : "Build Spiritual Muscles"}
                   </h2>
                   <p className="text-muted-foreground text-lg font-bold">
                     {hasCompletedToday
-                      ? "You've earned your points. See you at sunrise."
+                      ? "You've earned your points. Resets at 12:00am UTC."
                       : "4 intense drills · ~6 min session · 400 pts potential"}
                   </p>
                 </div>

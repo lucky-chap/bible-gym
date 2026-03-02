@@ -221,43 +221,6 @@ function appReducer(state: AppState, action: Action): AppState {
           }
         : null;
 
-      // Sync user data to Appwrite
-      if (updatedUser) {
-        databases
-          .updateDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_USERS_COLLECTION_ID,
-            updatedUser.id,
-            {
-              streak: updatedUser.streak,
-              totalScore: updatedUser.totalScore,
-              weeklyScore: updatedUser.weeklyScore,
-              lastWorkoutDate: updatedUser.lastWorkoutDate,
-            },
-          )
-          .catch((e) =>
-            console.error("Failed to sync user data to Appwrite", e),
-          );
-
-        // Create a record of this daily workout
-        databases
-          .createDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_WORKOUTS_COLLECTION_ID,
-            ID.unique(),
-            {
-              userId: updatedUser.id,
-              date: today,
-              totalScore: state.workout.totalScore,
-              memorizationScore: state.workout.scores.memorization,
-              contextScore: state.workout.scores.context,
-              verseMatchScore: state.workout.scores.verseMatch,
-              rearrangeScore: state.workout.scores.rearrange,
-            },
-          )
-          .catch((e) => console.error("Failed to log daily workout", e));
-      }
-
       const updatedGroupMembers = state.groupMembers
         .map((m) =>
           m.userId === state.user?.id
@@ -325,44 +288,10 @@ function appReducer(state: AppState, action: Action): AppState {
 
     case "LOG_PRACTICE_SCORE": {
       if (state.user) {
-        databases
-          .createDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_PRACTICE_COLLECTION_ID,
-            ID.unique(),
-            {
-              userId: state.user.id,
-              timestamp: new Date().toISOString(),
-              drillType: action.payload.drillType,
-              score: action.payload.score,
-              accuracy: action.payload.accuracy,
-              config: action.payload.config
-                ? JSON.stringify(action.payload.config)
-                : null,
-            },
-          )
-          .catch((e) =>
-            console.error("Failed to sync practice history to Appwrite", e),
-          );
-
         const updatedUser: User = {
           ...state.user,
           totalScore: state.user.totalScore + action.payload.score,
         };
-
-        // Sync updated score to Appwrite users collection
-        databases
-          .updateDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_USERS_COLLECTION_ID,
-            updatedUser.id,
-            {
-              totalScore: updatedUser.totalScore,
-            },
-          )
-          .catch((e) =>
-            console.error("Failed to sync user practice score to Appwrite", e),
-          );
 
         return {
           ...state,
@@ -547,14 +476,27 @@ export function useWorkout() {
   const router = useRouter();
 
   const startWorkout = async (aiDrill?: Workout["drills"][0]) => {
-    const workout = await generateDailyWorkout(state.user?.id);
-    if (aiDrill) {
-      // Replace one random drill with the AI one
-      const randomIndex = Math.floor(Math.random() * 3);
-      workout.drills[randomIndex] = aiDrill;
+    try {
+      // 1. Fetch today's global workout
+      const response = await fetch("/api/daily-workout");
+      if (!response.ok) throw new Error("Failed to fetch daily workout");
+      const workout = await response.json();
+
+      if (aiDrill) {
+        // Replace one random drill with the AI one (keeping existing legacy feature)
+        const randomIndex = Math.floor(Math.random() * 3);
+        workout.drills[randomIndex] = aiDrill;
+      }
+
+      dispatch({ type: "START_WORKOUT", payload: workout });
+      router.push("/workout");
+    } catch (error) {
+      console.error("Failed to start daily workout:", error);
+      // Optional: Client-side fallback if API is completely down
+      const fallback = await generateDailyWorkout(state.user?.id);
+      dispatch({ type: "START_WORKOUT", payload: fallback });
+      router.push("/workout");
     }
-    dispatch({ type: "START_WORKOUT", payload: workout });
-    router.push("/workout");
   };
 
   const startGroupChallenge = (challenge: Workout) => {
@@ -562,17 +504,82 @@ export function useWorkout() {
     router.push("/workout");
   };
 
-  const completeDrill = (drillType: string, score: number) => {
+  const handleDrillComplete = async (drillType: string, score: number) => {
     dispatch({ type: "COMPLETE_DRILL", payload: { drillType, score } });
-  };
 
-  const nextDrill = () => {
     if (
       state.workout &&
       state.currentDrillIndex < state.workout.drills.length - 1
     ) {
       dispatch({ type: "NEXT_DRILL" });
     } else {
+      // PERSISTENCE LOGIC MOVED HERE, calculating final score inline to avoid stale state
+      if (state.workout && state.user) {
+        const today = new Date().toISOString().split("T")[0];
+        const yesterday = new Date(Date.now() - 86400000)
+          .toISOString()
+          .split("T")[0];
+
+        const isConsecutive = state.user.lastWorkoutDate === yesterday;
+        const alreadyDoneToday = state.user.lastWorkoutDate === today;
+
+        const newStreak = alreadyDoneToday
+          ? state.user.streak
+          : isConsecutive
+            ? state.user.streak + 1
+            : 1;
+
+        const updatedScores = { ...state.workout.scores };
+        if (drillType === "memorization") updatedScores.memorization = score;
+        if (drillType === "context") updatedScores.context = score;
+        if (drillType === "verse-match") updatedScores.verseMatch = score;
+        if (drillType === "rearrange") updatedScores.rearrange = score;
+
+        const finalWorkoutTotal =
+          updatedScores.memorization +
+          updatedScores.context +
+          updatedScores.verseMatch +
+          (updatedScores.rearrange || 0);
+
+        const totalScore = state.user.totalScore + finalWorkoutTotal;
+        const weeklyScore = state.workout.isGroupChallenge
+          ? (state.user.weeklyScore || 0) + finalWorkoutTotal
+          : state.user.weeklyScore;
+
+        try {
+          // 1. Sync user progress
+          await databases.updateDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_USERS_COLLECTION_ID,
+            state.user.id,
+            {
+              streak: newStreak,
+              totalScore,
+              weeklyScore,
+              lastWorkoutDate: today,
+            },
+          );
+
+          // 2. Log workout history
+          await databases.createDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_WORKOUTS_COLLECTION_ID,
+            ID.unique(),
+            {
+              userId: state.user.id,
+              date: today,
+              totalScore: finalWorkoutTotal,
+              memorizationScore: updatedScores.memorization,
+              contextScore: updatedScores.context,
+              verseMatchScore: updatedScores.verseMatch,
+              rearrangeScore: updatedScores.rearrange,
+            },
+          );
+        } catch (e) {
+          console.error("Failed to sync workout data:", e);
+        }
+      }
+
       dispatch({ type: "COMPLETE_WORKOUT" });
       router.push("/workout-complete");
     }
@@ -583,8 +590,7 @@ export function useWorkout() {
     currentDrillIndex: state.currentDrillIndex,
     startWorkout,
     startGroupChallenge,
-    completeDrill,
-    nextDrill,
+    handleDrillComplete,
   };
 }
 
@@ -610,8 +616,40 @@ export function usePractice() {
     router.push("/dashboard");
   };
 
-  const logPractice = (score: number, accuracy: number = score) => {
-    if (!state.practiceDrillType) return;
+  const logPractice = async (score: number, accuracy: number = score) => {
+    if (!state.practiceDrillType || !state.user) return;
+
+    // 1. Log practice history
+    databases
+      .createDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_PRACTICE_COLLECTION_ID,
+        ID.unique(),
+        {
+          userId: state.user.id,
+          timestamp: new Date().toISOString(),
+          drillType: state.practiceDrillType,
+          score,
+          accuracy,
+          config: state.practiceConfig
+            ? JSON.stringify(state.practiceConfig)
+            : null,
+        },
+      )
+      .catch((e) => console.error("Failed to log practice history:", e));
+
+    // 2. Update user score
+    databases
+      .updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_USERS_COLLECTION_ID,
+        state.user.id,
+        {
+          totalScore: state.user.totalScore + score,
+        },
+      )
+      .catch((e) => console.error("Failed to update user score:", e));
+
     dispatch({
       type: "LOG_PRACTICE_SCORE",
       payload: {
@@ -854,7 +892,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               totalScore: profile.totalScore || 0,
               weeklyScore: profile.weeklyScore || 0,
               lastWeeklyReset: profile.lastWeeklyReset || null,
-              lastWorkoutDate: profile.lastWorkoutDate || null,
+              lastWorkoutDate: profile.lastWorkoutDate
+                ? profile.lastWorkoutDate.split("T")[0]
+                : null,
               groupId: profile.groupId || null,
               createdAt: currentAccount.$createdAt,
             };
