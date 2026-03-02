@@ -1,6 +1,11 @@
 "use client";
 
-import { useAppState, useWorkout, useMastery } from "@/lib/store";
+import {
+  useAppState,
+  useWorkout,
+  useMastery,
+  useAppDispatch,
+} from "@/lib/store";
 import {
   Flame,
   Trophy,
@@ -27,13 +32,14 @@ import {
   generateRandomAIDrill,
   generateThemedWorkout,
 } from "@/app/actions/generate-drills"; */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { VerseSelector } from "./mastery/verse-selector";
 
 export function Dashboard() {
   const state = useAppState();
   const { startWorkout, startGroupChallenge } = useWorkout();
+  const dispatch = useAppDispatch();
   const { masteryStats } = useMastery();
   const user = state.user;
   const [isStartingDaily, setIsStartingDaily] = useState(false);
@@ -41,6 +47,10 @@ export function Dashboard() {
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
   const [showMasterySelector, setShowMasterySelector] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    dispatch({ type: "SET_VIEW", payload: "dashboard" });
+  }, [dispatch]);
 
   if (state.isLoading || !user) {
     return (

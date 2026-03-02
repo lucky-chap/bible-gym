@@ -192,24 +192,28 @@ export function WorkoutComplete() {
 
         {/* Back to Dashboard/Group */}
         <button
-          onClick={() =>
-            router.push(workout.isGroupChallenge ? "/group" : "/dashboard")
-          }
+          onClick={() => {
+            const target =
+              state.returnView === "group" ? "/group" : "/dashboard";
+            router.push(target);
+          }}
           className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 flex items-center justify-center gap-2"
           style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
         >
-          {workout.isGroupChallenge ? "Back to Group" : "Back to Dashboard"}
+          {state.returnView === "group" ? "Back to Group" : "Back to Dashboard"}
           <ArrowRight className="w-5 h-5" />
         </button>
 
         <button
-          onClick={() =>
-            router.push(workout.isGroupChallenge ? "/group" : "/dashboard")
-          }
+          onClick={() => {
+            const target =
+              state.returnView === "group" ? "/group" : "/dashboard";
+            router.push(target);
+          }}
           className="text-muted-foreground text-sm hover:text-foreground transition-colors font-bold"
         >
           <Dumbbell className="w-4 h-4 inline mr-1" />
-          {workout.isGroupChallenge
+          {state.returnView === "group"
             ? "Great team effort"
             : "See you at the gym tomorrow"}
         </button>

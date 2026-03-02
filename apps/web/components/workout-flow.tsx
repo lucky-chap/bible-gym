@@ -11,7 +11,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export function WorkoutFlow() {
-  const { workout, currentDrillIndex, handleDrillComplete } = useWorkout();
+  const { workout, currentDrillIndex, handleDrillComplete, exitWorkout } =
+    useWorkout();
   const router = useRouter();
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
@@ -81,7 +82,7 @@ export function WorkoutFlow() {
         <div className="max-w-3xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-3">
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={exitWorkout}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-bold transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />

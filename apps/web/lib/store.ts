@@ -31,8 +31,9 @@ import {
   APPWRITE_MASTERY_COLLECTION_ID,
   APPWRITE_WORKOUTS_COLLECTION_ID,
   APPWRITE_PRACTICE_COLLECTION_ID,
+  APPWRITE_GROUPS_COLLECTION_ID,
 } from "./appwrite";
-import { OAuthProvider, ID } from "appwrite";
+import { OAuthProvider, ID, Query } from "appwrite";
 
 // ── State Shape ─────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ interface AppState {
   verseMastery: Record<string, VerseMastery>;
   masteryStats: MasteryStats;
   isLoading: boolean;
+  returnView: AppView | "mastery" | null;
 }
 
 const initialState: AppState = {
@@ -72,6 +74,7 @@ const initialState: AppState = {
     consistencyScore: 0,
   },
   isLoading: true,
+  returnView: null,
 };
 
 // ── Actions ─────────────────────────────────────────────────
@@ -128,7 +131,8 @@ type Action =
       };
     }
   | { type: "LOAD_STATE"; payload: Partial<AppState> }
-  | { type: "INITIALIZE_APPWRITE_USER"; payload: User };
+  | { type: "INITIALIZE_APPWRITE_USER"; payload: User }
+  | { type: "EXIT_DRILL" };
 
 // ── Reducer ─────────────────────────────────────────────────
 
@@ -152,12 +156,23 @@ function appReducer(state: AppState, action: Action): AppState {
     case "SET_VIEW":
       return { ...state, currentView: action.payload };
 
+    case "EXIT_DRILL":
+      return {
+        ...state,
+        currentView: state.returnView || "dashboard",
+        workout: null,
+        currentDrillIndex: 0,
+        practiceDrillType: null,
+        practiceConfig: null,
+      };
+
     case "START_WORKOUT":
       return {
         ...state,
         workout: action.payload,
         currentDrillIndex: 0,
         currentView: "workout",
+        returnView: state.currentView,
       };
 
     case "NEXT_DRILL":
@@ -214,9 +229,10 @@ function appReducer(state: AppState, action: Action): AppState {
             ...state.user,
             streak: newStreak,
             totalScore: state.user.totalScore + state.workout!.totalScore,
-            weeklyScore: state.workout!.isGroupChallenge
-              ? (state.user.weeklyScore || 0) + state.workout!.totalScore
-              : state.user.weeklyScore,
+            weeklyScore:
+              state.workout!.isGroupChallenge || state.user.groupId
+                ? (state.user.weeklyScore || 0) + state.workout!.totalScore
+                : state.user.weeklyScore,
             lastWorkoutDate: today,
             memorizationTotal:
               (state.user.memorizationTotal || 0) +
@@ -261,6 +277,68 @@ function appReducer(state: AppState, action: Action): AppState {
         });
       }
 
+      // Sync progress to Appwrite
+      if (state.user && updatedUser) {
+        // 1. Update User Profile
+        databases
+          .updateDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_USERS_COLLECTION_ID,
+            state.user.id,
+            {
+              streak: updatedUser.streak,
+              totalScore: updatedUser.totalScore,
+              weeklyScore: updatedUser.weeklyScore,
+              lastWorkoutDate: updatedUser.lastWorkoutDate,
+              memorizationTotal: updatedUser.memorizationTotal,
+              contextTotal: updatedUser.contextTotal,
+              verseMatchTotal: updatedUser.verseMatchTotal,
+              rearrangeTotal: updatedUser.rearrangeTotal,
+            },
+          )
+          .catch((e) => console.error("Failed to sync user profile", e));
+
+        // 2. Log Workout Result
+        databases
+          .createDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_WORKOUTS_COLLECTION_ID,
+            ID.unique(),
+            {
+              userId: state.user.id,
+              date: today,
+              totalScore: state.workout.totalScore,
+              memorizationScore: state.workout.scores.memorization || 0,
+              contextScore: state.workout.scores.context || 0,
+              verseMatchScore: state.workout.scores.verseMatch || 0,
+              rearrangeScore: state.workout.scores.rearrange || 0,
+            },
+          )
+          .catch((e) => console.error("Failed to log workout", e));
+
+        // 3. Update Group Challenge Participants
+        if (state.workout.isGroupChallenge && state.user.groupId) {
+          const group = state.groups.find((g) => g.id === state.user!.groupId);
+          if (group) {
+            const participants = group.challengeParticipants || [];
+            if (!participants.includes(state.user.id)) {
+              databases
+                .updateDocument(
+                  APPWRITE_DB_ID,
+                  APPWRITE_GROUPS_COLLECTION_ID,
+                  group.id,
+                  {
+                    challengeParticipants: [...participants, state.user.id],
+                  },
+                )
+                .catch((e) =>
+                  console.error("Failed to update group participants", e),
+                );
+            }
+          }
+        }
+      }
+
       return {
         ...state,
         user: updatedUser,
@@ -296,6 +374,7 @@ function appReducer(state: AppState, action: Action): AppState {
         currentView: "practice",
         practiceDrillType: action.payload.type,
         practiceConfig: action.payload.config || null,
+        returnView: state.currentView,
       };
 
     case "LOG_PRACTICE_SCORE": {
@@ -635,12 +714,19 @@ export function useWorkout() {
     }
   };
 
+  const exitWorkout = () => {
+    dispatch({ type: "EXIT_DRILL" });
+    const target = state.returnView === "group" ? "/group" : "/dashboard";
+    router.push(target);
+  };
+
   return {
     workout: state.workout,
     currentDrillIndex: state.currentDrillIndex,
     startWorkout,
     startGroupChallenge,
     handleDrillComplete,
+    exitWorkout,
   };
 }
 
@@ -663,7 +749,9 @@ export function usePractice() {
   };
 
   const exitPractice = () => {
-    router.push("/dashboard");
+    dispatch({ type: "EXIT_DRILL" });
+    const target = state.returnView === "group" ? "/group" : "/dashboard";
+    router.push(target);
   };
 
   const logPractice = async (score: number, accuracy: number = score) => {
@@ -755,6 +843,7 @@ export function useMastery() {
         payload: { id: verse.reference, mastery: initialMastery },
       });
     }
+    dispatch({ type: "SET_VIEW", payload: "practice" }); // Borrow practice view for now or implicitly track
     router.push(`/mastery/${encodeURIComponent(verse.reference)}`);
   };
 
@@ -782,55 +871,178 @@ export function useGroups() {
   const state = useAppState();
   const dispatch = useAppDispatch();
 
-  const createGroup = (name: string) => {
-    if (!state.user) return;
+  const refreshGroupData = async (groupId: string) => {
+    try {
+      // 1. Fetch group details
+      const groupDoc = await databases.getDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        groupId,
+      );
+      dispatch({ type: "SET_GROUPS", payload: [groupDoc as any] });
 
-    const group: Group = {
-      id: `group-${Date.now()}`,
-      name,
-      inviteCode: generateInviteCode(),
-      members: [state.user.id],
-      createdBy: state.user.id,
-      createdAt: new Date().toISOString(),
-    };
+      // 2. Fetch members (users with this groupId)
+      const usersResponse = await databases.listDocuments(
+        APPWRITE_DB_ID,
+        APPWRITE_USERS_COLLECTION_ID,
+        [Query.equal("groupId", groupId), Query.limit(100)],
+      );
 
-    dispatch({ type: "JOIN_GROUP", payload: group });
+      const members: GroupMember[] = usersResponse.documents.map(
+        (doc: any) => ({
+          userId: doc.$id,
+          name: doc.name,
+          avatarInitials: doc.name
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2),
+          weeklyScore: doc.weeklyScore || 0,
+          streak: doc.streak || 0,
+        }),
+      );
 
-    // Generate mock leaderboard
-    generateMockLeaderboard(dispatch, state.user, group);
+      dispatch({
+        type: "SET_GROUP_MEMBERS",
+        payload: members.sort((a, b) => b.weeklyScore - a.weeklyScore),
+      });
+    } catch (e) {
+      console.error("Failed to refresh group data:", e);
+    }
   };
 
-  const joinGroup = (inviteCode: string) => {
-    // For MVP, create a mock group for demo purposes
+  const createGroup = async (name: string): Promise<boolean> => {
     if (!state.user) return false;
 
-    const existingGroup = state.groups.find((g) => g.inviteCode === inviteCode);
-    if (existingGroup) {
-      dispatch({ type: "JOIN_GROUP", payload: existingGroup });
+    try {
+      const groupId = ID.unique();
+      const group: Group = {
+        id: groupId,
+        name,
+        inviteCode: generateInviteCode(),
+        members: [state.user.id],
+        createdBy: state.user.id,
+        createdAt: new Date().toISOString(),
+        groupChallenge: null,
+        challengeParticipants: [],
+      };
+
+      // 1. Create group document
+      await databases.createDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        groupId,
+        {
+          name: group.name,
+          inviteCode: group.inviteCode,
+          members: group.members,
+          createdBy: group.createdBy,
+          createdAt: group.createdAt,
+          groupChallenge: null,
+          challengeParticipants: [],
+        },
+      );
+
+      // 2. Update user profile with new groupId
+      await databases.updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_USERS_COLLECTION_ID,
+        state.user.id,
+        { groupId: groupId },
+      );
+
+      dispatch({ type: "JOIN_GROUP", payload: group });
+      await refreshGroupData(groupId);
       return true;
+    } catch (e) {
+      console.error("Failed to create group:", e);
+      return false;
     }
-
-    // Create demo group
-    const group: Group = {
-      id: `group-${Date.now()}`,
-      name: "Bible Warriors",
-      inviteCode,
-      members: [state.user.id],
-      createdBy: "demo",
-      createdAt: new Date().toISOString(),
-    };
-
-    dispatch({ type: "JOIN_GROUP", payload: group });
-    generateMockLeaderboard(dispatch, state.user, group);
-    return true;
   };
 
-  const setGroupChallenge = (challenge: Workout) => {
-    dispatch({ type: "SET_GROUP_CHALLENGE", payload: challenge });
+  const joinGroup = async (inviteCode: string) => {
+    if (!state.user) return false;
+
+    try {
+      // 1. Find group by invite code
+      const response = await databases.listDocuments(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        [Query.equal("inviteCode", inviteCode)],
+      );
+
+      if (response.documents.length === 0) return false;
+
+      const groupDoc = response.documents[0];
+      const groupId = groupDoc.$id;
+      const currentMembers = groupDoc.members || [];
+
+      if (!currentMembers.includes(state.user.id)) {
+        // 2. Add user to group members list
+        await databases.updateDocument(
+          APPWRITE_DB_ID,
+          APPWRITE_GROUPS_COLLECTION_ID,
+          groupId,
+          {
+            members: [...currentMembers, state.user.id],
+          },
+        );
+      }
+
+      // 3. Update user profile
+      await databases.updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_USERS_COLLECTION_ID,
+        state.user.id,
+        { groupId: groupId },
+      );
+
+      dispatch({ type: "JOIN_GROUP", payload: groupDoc as any });
+      await refreshGroupData(groupId);
+      return true;
+    } catch (e) {
+      console.error("Failed to join group:", e);
+      return false;
+    }
   };
 
-  const deleteGroupChallenge = () => {
-    dispatch({ type: "DELETE_GROUP_CHALLENGE" });
+  const setGroupChallenge = async (challenge: Workout) => {
+    if (!state.user?.groupId) return;
+
+    try {
+      await databases.updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        state.user.groupId,
+        {
+          groupChallenge: JSON.stringify(challenge),
+          challengeParticipants: [],
+        },
+      );
+      dispatch({ type: "SET_GROUP_CHALLENGE", payload: challenge });
+    } catch (e) {
+      console.error("Failed to set group challenge:", e);
+    }
+  };
+
+  const deleteGroupChallenge = async () => {
+    if (!state.user?.groupId) return;
+
+    try {
+      await databases.updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        state.user.groupId,
+        {
+          groupChallenge: null,
+          challengeParticipants: [],
+        },
+      );
+      dispatch({ type: "DELETE_GROUP_CHALLENGE" });
+    } catch (e) {
+      console.error("Failed to delete group challenge:", e);
+    }
   };
 
   return {
@@ -840,6 +1052,7 @@ export function useGroups() {
     joinGroup,
     setGroupChallenge,
     deleteGroupChallenge,
+    refreshGroupData,
   };
 }
 
@@ -914,6 +1127,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               practiceConfig: parsed.practiceConfig || null,
               verseMastery: parsed.verseMastery || {},
               masteryStats: parsed.masteryStats || initialState.masteryStats,
+              returnView: parsed.returnView || null,
             } as Partial<AppState>,
           });
         }
@@ -921,6 +1135,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // 2. Check Appwrite for active session (source of truth)
         const currentAccount = await account.get();
         if (currentAccount) {
+          // Helper for weekly resets
+          const getStartOfWeek = (date: Date) => {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            d.setDate(diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
+          };
+
+          const currentStartOfWeek = getStartOfWeek(new Date());
+
+          const fetchAndDispatchGroupData = async (groupId: string) => {
+            try {
+              // 1. Fetch group details
+              const groupDoc = await databases.getDocument(
+                APPWRITE_DB_ID,
+                APPWRITE_GROUPS_COLLECTION_ID,
+                groupId,
+              );
+
+              // Parse group challenge from JSON string
+              const parsedGroupDoc = {
+                ...groupDoc,
+                id: groupDoc.$id,
+                groupChallenge: groupDoc.groupChallenge
+                  ? JSON.parse(groupDoc.groupChallenge)
+                  : null,
+              } as unknown as Group;
+
+              // 2. Fetch members (users with this groupId)
+              const usersResponse = await databases.listDocuments(
+                APPWRITE_DB_ID,
+                APPWRITE_USERS_COLLECTION_ID,
+                [Query.equal("groupId", groupId), Query.limit(100)],
+              );
+
+              const members: GroupMember[] = usersResponse.documents.map(
+                (doc: any) => ({
+                  userId: doc.$id,
+                  name: doc.name,
+                  avatarInitials: doc.name
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2),
+                  weeklyScore: doc.weeklyScore || 0,
+                  streak: doc.streak || 0,
+                }),
+              );
+
+              dispatch({
+                type: "LOAD_STATE",
+                payload: {
+                  groups: [parsedGroupDoc],
+                  groupMembers: members.sort(
+                    (a, b) => b.weeklyScore - a.weeklyScore,
+                  ),
+                },
+              });
+            } catch (groupError) {
+              console.error(
+                "Failed to load group data during init",
+                groupError,
+              );
+            }
+          };
+
           try {
             // Attempt to load the user's DB profile
             const profile = await databases.getDocument(
@@ -928,18 +1211,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
               APPWRITE_USERS_COLLECTION_ID,
               currentAccount.$id,
             );
-
-            // Helper for weekly resets
-            const getStartOfWeek = (date: Date) => {
-              const d = new Date(date);
-              const day = d.getDay();
-              const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-              d.setDate(diff);
-              d.setHours(0, 0, 0, 0);
-              return d;
-            };
-
-            const currentStartOfWeek = getStartOfWeek(new Date());
 
             const user: User = {
               id: currentAccount.$id,
@@ -992,7 +1263,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
 
             dispatch({ type: "INITIALIZE_APPWRITE_USER", payload: user });
+
+            // Fetch group data if the user belongs to one
+            if (user.groupId) {
+              await fetchAndDispatchGroupData(user.groupId);
+            }
+            dispatch({ type: "SET_LOADING", payload: false });
           } catch (e: any) {
+            // ... (catch block continue)
             // If profile doesn't exist, create one
             if (e.code === 404) {
               const newUser: User = {
@@ -1027,13 +1305,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     weeklyScore: newUser.weeklyScore,
                     lastWeeklyReset: newUser.lastWeeklyReset,
                     lastWorkoutDate: newUser.lastWorkoutDate,
-                    groupId: newUser.groupId,
                   },
                 );
                 dispatch({
                   type: "INITIALIZE_APPWRITE_USER",
                   payload: newUser,
                 });
+
+                // Fetch group data if the new user belongs to one (unlikely on creation, but for consistency)
+                if (newUser.groupId) {
+                  await fetchAndDispatchGroupData(newUser.groupId);
+                }
+                dispatch({ type: "SET_LOADING", payload: false });
               } catch (createError) {
                 console.error(
                   "Failed to create new user document in Appwrite",
@@ -1046,10 +1329,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
               dispatch({ type: "SET_LOADING", payload: false });
             }
           }
-
-          // Optional: Load mastery data from Appwrite here if needed,
-          // or rely on local storage for now until explicitly synced.
-          // For a full implementation, you'd fetch the mastery collection using `Query.equal('userId', currentAccount.$id)`
         } else {
           dispatch({ type: "SET_LOADING", payload: false });
         }
@@ -1078,6 +1357,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           practiceConfig: state.practiceConfig,
           verseMastery: state.verseMastery,
           masteryStats: state.masteryStats,
+          returnView: state.returnView,
         }),
       );
     }
@@ -1090,6 +1370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state.verseMastery,
     state.masteryStats,
     state.isLoading,
+    state.returnView,
   ]);
 
   return React.createElement(

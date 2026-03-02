@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🕊️ Bible Gym — Train Your Spirit
 
-## Getting Started
+> "Physical training is good, but training for godliness is much better, promising benefits in this life and the life to come." — 1 Timothy 4:8
 
-First, run the development server:
+Welcome to **Bible Gym**, a high-intensity developer-led experiment in spiritual fitness. We took the psychology of a modern fitness app—the streaks, the stats, the "just one more set" addiction—and applied it to the most important "muscle" you own: your spirit.
+
+## 💪 The Workout Philosophy
+
+Bible Gym isn't a library; it's a training ground. We believe that Scripture should be **etched into the heart**, not just glanced at on a screen. Every day, the gym generates a **Global Daily Workout** for the entire community.
+
+### 🏋️ The Drills
+
+- **Memorization Drill**: Clozed-deletion recall. Fill in the missing words to build active retrieval pathways.
+- **Context Challenge**: Rapid-fire questions on authorship, history, and theme. Proper form means understanding the _why_ behind the verse.
+- **Verse Match**: High-speed reference matching. Build that quick-twitch recall for when you need a Word in the heat of life.
+- **Rearrange Drill**: Drag and drop verses into their correct chronological order.
+
+### 🏆 Mastery Mode
+
+Take specific verses through **5 Levels of Overload**. From basic recognition to full-text recall under pressure. Once it's "Mastered," it's with you for life.
+
+## 🛠️ The Tech Stack (The "Gear")
+
+Built for the [DEV Weekend Challenge: Community](https://dev.to/challenges/weekend-2026-02-28).
+
+- **Framework**: [Next.js](https://nextjs.org/) (App Router)
+- **Backend-as-a-Service**: [Appwrite](https://appwrite.io/) (Auth, Realtime Databases, Points Sync)
+- **AI Engine**: [Google Gemini API](https://ai.google.dev/) (Dynamic context & themed workout generation)
+- **Animation**: [Framer Motion](https://www.framer.com/motion/) (Neo-Brutalist "punchy" UI)
+- **Styles**: Tailwind CSS + Shadcn UI
+
+## 🚀 Getting Started
+
+### 1. Requirements
+
+- Node.js 18+
+- pnpm (recommended)
+- An Appwrite project (Cloud or Self-hosted)
+- A Gemini API Key
+
+### 2. Environment Setup
+
+Copy `.env.example` (or create one) in `apps/web/.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+GEMINI_API_KEY=your_key
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_id
+APPWRITE_API_KEY=your_admin_key
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=your_db_id
+CRON_SECRET=a_random_string
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Database Initialization
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+We’ve automated the heavy lifting. Run this to sync the collections and attributes:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# In the apps/web directory
+pnpm run setup:prod # or run the local setup script if you prefer
+```
 
-## Learn More
+### 4. Running the Gym
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm install
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Local Reproduction & Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If you are a developer looking to reproduce this environment:
 
-## Deploy on Vercel
+1.  **Appwrite Setup**: Create an Appwrite project. Enable **Google OAuth** in the Auth section.
+2.  **Database Creation**: You don't need to create collections manually.
+    - Create a database in Appwrite and copy its ID.
+    - Add your `APPWRITE_API_KEY` (with `collections.write`, `attributes.write`, `indexes.write` scopes) to `.env.local`.
+    - Run `pnpm run setup:prod` (from `apps/web`) to automatically provision all required collections and attributes.
+3.  **Local Testing**:
+    - Use `pnpm run dev` to start the Next.js app.
+    - Open `http://localhost:3000`.
+    - If you need to test the Daily Workout logic without waiting 24 hours, you can manually trigger the cron: `curl -X POST http://localhost:3000/api/daily-workout -H "Authorization: Bearer your_cron_secret"`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ⏰ Automated Training (Cron Jobs)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To keep the daily workout fresh, we use automated pings:
+
+- **Production**: Configured via `vercel.json` to trigger at midnight UTC.
+- **Local Dev**: Run `pnpm run cron:local`. It pings your local dev server and then runs a background daemon to keep the "daily" cycle alive while you code.
+
+---
+
+### 📖 Why This?
+
+I built this because I realized I was tracking my bench press more than my spiritual growth. Read the full story at [/why-this](https://bible-gym.vercel.app/why-this).
+
+**Keep Training. Grow in Grace.** 🕊️💪

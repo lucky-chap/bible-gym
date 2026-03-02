@@ -8,10 +8,15 @@ import {
   Workout,
 } from "@/lib/types";
 
-export async function generateThemedWorkout(theme: string): Promise<Workout> {
-  const apiKey = process.env.GEMINI_API_KEY;
+export async function generateThemedWorkout(
+  theme: string,
+  userApiKey: string,
+): Promise<Workout> {
+  const apiKey = userApiKey;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is not set.");
+    throw new Error(
+      "Gemini API Key is missing. Please provide your own API key.",
+    );
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -62,13 +67,19 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
   const seed = Date.now();
 
   const mappedPassages: BiblePassage[] = data.passages.map(
-    (p: { reference: string; text: string; book: string; chapter: number; verses: string }) => ({
+    (p: {
+      reference: string;
+      text: string;
+      book: string;
+      chapter: number;
+      verses: string;
+    }) => ({
       reference: p.reference,
       text: p.text,
       book: p.book,
       chapter: p.chapter,
       verses: p.verses,
-    })
+    }),
   );
 
   const memorizationQuestions: MemorizationQuestion[] = data.passages.map(
@@ -79,8 +90,7 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
       const eligibleIndices = words
         .map((w: string, idx: number) => ({ word: w, index: idx }))
         .filter(
-          (w: { word: string }) =>
-            w.word.replace(/[^a-zA-Z]/g, "").length > 2
+          (w: { word: string }) => w.word.replace(/[^a-zA-Z]/g, "").length > 2,
         );
 
       // Shuffle eligible indices
@@ -103,10 +113,10 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
         id: `ai-mem-${seed}-${i}`,
         passage: mappedPassages[i],
         blankedWords: blankedWords.sort(
-          (a: { index: number }, b: { index: number }) => a.index - b.index
+          (a: { index: number }, b: { index: number }) => a.index - b.index,
         ),
       };
-    }
+    },
   );
 
   const contextQuestions: ContextQuestionItem[] = data.passages.map(
@@ -118,21 +128,21 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
           correctIndex: number;
         };
       },
-      i: number
+      i: number,
     ) => ({
       id: `ai-ctx-${seed}-${i}`,
       question: p.contextQuestion.question,
       options: p.contextQuestion.options,
       correctIndex: p.contextQuestion.correctIndex,
       passage: mappedPassages[i],
-    })
+    }),
   );
 
   const verseMatchPairs = data.passages.map(
     (p: { reference: string; text: string }) => ({
       reference: p.reference,
       text: p.text,
-    })
+    }),
   );
 
   return {
@@ -165,7 +175,9 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
   };
 }
 
-export async function generateRandomAIDrill(): Promise<Workout["drills"][0]> {
+export async function generateRandomAIDrill(
+  apiKey: string,
+): Promise<Workout["drills"][0]> {
   const themes = [
     "Faith and Endurance",
     "Love and Compassion",
@@ -177,7 +189,7 @@ export async function generateRandomAIDrill(): Promise<Workout["drills"][0]> {
     "Service and Sacrifice",
   ];
   const randomTheme = themes[Math.floor(Math.random() * themes.length)];
-  const fullWorkout = await generateThemedWorkout(randomTheme);
+  const fullWorkout = await generateThemedWorkout(randomTheme, apiKey);
   // Pick a random drill from the 3 types
   return fullWorkout.drills[Math.floor(Math.random() * 3)];
 }

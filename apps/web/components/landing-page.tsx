@@ -14,6 +14,7 @@ import {
   Heart,
   Sparkles,
 } from "lucide-react";
+import Link from "next/link";
 
 export function LandingPage() {
   const router = useRouter();
@@ -40,12 +41,14 @@ export function LandingPage() {
               Start Training
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-card text-foreground font-bold text-lg border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
-            >
-              See How It Works
-            </button>
+            <Link href="/why-this">
+              <button
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-card text-foreground font-bold text-lg border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+              >
+                Why This?
+              </button>
+            </Link>
           </div>
 
           {/* Floating drill preview cards */}
@@ -104,7 +107,7 @@ export function LandingPage() {
       </header>
 
       {/* ===================== FEATURES (Dark section) ===================== */}
-      <section className="bg-foreground py-20 md:py-28">
+      <section className="bg-foreground py-20 md:py-28 md:pb-12">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-black text-white mb-4 ">
@@ -158,8 +161,9 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* will uncomment this section when you i real social proof */}
       {/* ===================== SOCIAL PROOF (Pink section) ===================== */}
-      <section className="bg-primary py-20 md:py-28">
+      {/* <section className="bg-primary py-20 md:py-28">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl md:text-5xl font-black text-white mb-4 text-center ">
             Used And Loved By
@@ -219,7 +223,7 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ===================== STATS ===================== */}
       <section className="bg-foreground py-20">
