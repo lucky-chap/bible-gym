@@ -154,6 +154,17 @@ async function main() {
           false,
         );
         await createStringAttribute(dbId, collId, "groupId", 255, false);
+
+        // Elite Drill Progress Stats
+        await createIntegerAttribute(dbId, collId, "memorizationTotal", false);
+        await createIntegerAttribute(dbId, collId, "contextTotal", false);
+        await createIntegerAttribute(dbId, collId, "verseMatchTotal", false);
+        await createIntegerAttribute(dbId, collId, "rearrangeTotal", false);
+        await createIntegerAttribute(dbId, collId, "masteryTotal", false);
+
+        // Mastery global stats
+        await createIntegerAttribute(dbId, collId, "masteryConsistency", false);
+        await createIntegerAttribute(dbId, collId, "masteredCount", false);
       },
     );
 

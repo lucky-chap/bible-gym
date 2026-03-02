@@ -12,6 +12,15 @@ export interface User {
   lastWorkoutDate: string | null; // ISO date string
   groupId: string | null;
   createdAt: string;
+  // Specific elite training points
+  memorizationTotal?: number;
+  contextTotal?: number;
+  verseMatchTotal?: number;
+  rearrangeTotal?: number;
+  masteryTotal?: number;
+  // User mastery global counters
+  masteryConsistency?: number;
+  masteredCount?: number;
 }
 
 export interface Group {

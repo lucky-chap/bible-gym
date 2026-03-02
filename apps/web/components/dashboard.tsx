@@ -16,7 +16,13 @@ import {
   Loader2,
   BookOpen,
   GripVertical,
+  HelpCircle,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 /* import {
   generateRandomAIDrill,
   generateThemedWorkout,
@@ -290,6 +296,8 @@ export function Dashboard() {
                       name: "Mastery",
                       desc: "Step-by-step",
                       color: "#8B5CF6",
+                      points: user.masteryTotal || 0,
+                      pointsLabel: "Pts",
                       onClick: () => setShowMasterySelector(true),
                     },
                     {
@@ -297,6 +305,7 @@ export function Dashboard() {
                       name: "Memorization",
                       desc: "Fill blanks",
                       color: "#3B82F6",
+                      points: user.memorizationTotal,
                       type: "memorization" as const,
                       onClick: () => router.push("/practice/memorization"),
                     },
@@ -305,6 +314,7 @@ export function Dashboard() {
                       name: "Context",
                       desc: "Deep study",
                       color: "#F59E0B",
+                      points: user.contextTotal,
                       type: "context" as const,
                       onClick: () => router.push("/practice/context"),
                     }, */
@@ -313,6 +323,7 @@ export function Dashboard() {
                       name: "Match",
                       desc: "Quick reflex",
                       color: "#10B981",
+                      points: user.verseMatchTotal,
                       type: "verse-match" as const,
                       onClick: () => router.push("/practice/verse-match"),
                     },
@@ -321,6 +332,7 @@ export function Dashboard() {
                       name: "Rearrange",
                       desc: "Drag & Drop",
                       color: "#EC4899",
+                      points: user.rearrangeTotal,
                       type: "rearrange" as const,
                       onClick: () => router.push("/practice/rearrange"),
                     },
@@ -328,12 +340,21 @@ export function Dashboard() {
                     <button
                       key={drill.name}
                       onClick={drill.onClick}
-                      className={`flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-foreground hover:translate-y-[-4px] transition-all group text-center`}
+                      className={`flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-foreground hover:translate-y-[-4px] transition-all group text-center relative overflow-hidden`}
                       style={{
                         boxShadow: "4px 4px 0px 0px var(--foreground)",
                         backgroundColor: `${drill.color}10`, // 10% opacity hex
                       }}
                     >
+                      {drill.points ? (
+                        <div
+                          className="absolute top-0 right-0 px-3 py-1 rounded-bl-2xl font-black text-xs border-b-2 border-l-2 border-foreground text-white shadow-[-2px_2px_0px_0px_rgba(0,0,0,1)]"
+                          style={{ backgroundColor: drill.color }}
+                        >
+                          {drill.points.toLocaleString()}{" "}
+                          {drill.pointsLabel || "Pts"}
+                        </div>
+                      ) : null}
                       <div
                         className="w-14 h-14 rounded-2xl border-2 border-foreground flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
                         style={{
@@ -407,8 +428,21 @@ export function Dashboard() {
                     <div className="text-2xl font-black text-foreground leading-none">
                       {masteryStats.streak}
                     </div>
-                    <div className="text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
                       Mastery Streak
+                      <Popover>
+                        <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                          <HelpCircle className="w-4 h-4 text-foreground/50 hover:text-primary transition-colors cursor-pointer" />
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-72 p-3 text-sm font-medium border-2 border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                          side="top"
+                        >
+                          Tracks how many consecutive days you've practiced your
+                          Mastery verses. Rewards consistent, daily memorization
+                          habits.
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -424,8 +458,21 @@ export function Dashboard() {
                     <div className="text-2xl font-black text-foreground leading-none">
                       {masteryStats.totalMastered}
                     </div>
-                    <div className="text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground font-black uppercase tracking-tighter mt-1">
                       Verses Mastered
+                      <Popover>
+                        <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                          <HelpCircle className="w-4 h-4 text-foreground/50 hover:text-primary transition-colors cursor-pointer" />
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-72 p-3 text-sm font-medium border-2 border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                          side="top"
+                        >
+                          Tracks how many verses you have successfully pushed
+                          all the way to Level 5 ("Mastered") status with 90%+
+                          accuracy.
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -439,8 +486,20 @@ export function Dashboard() {
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-end mb-1">
-                      <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
                         Consistency Score
+                        <Popover>
+                          <PopoverTrigger onClick={(e) => e.stopPropagation()}>
+                            <HelpCircle className="w-4 h-4 text-foreground/50 hover:text-primary transition-colors cursor-pointer" />
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-72 p-3 text-sm font-medium border-2 border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                            side="top"
+                          >
+                            A percentage that tracks your overall accuracy and
+                            reliability across all active Mastery verses.
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                     <div className="h-2 w-full bg-white/50 rounded-full overflow-hidden border border-foreground/20">

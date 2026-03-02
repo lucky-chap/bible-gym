@@ -64,14 +64,16 @@ function localFallback(
     | null,
 ): Drill {
   const seed = Date.now();
+  const count = Math.floor(Math.random() * 3) + 4; // 4 to 6
+
   if (type === "memorization") {
-    const passages = shuffleArray(BIBLE_PASSAGES).slice(0, 3);
+    const passages = shuffleArray(BIBLE_PASSAGES).slice(0, count);
     return {
       type: "memorization",
       questions: passages.map((p, i) => buildBlanks(p, seed, i)),
     };
   } else if (type === "context") {
-    const passages = shuffleArray(BIBLE_PASSAGES).slice(0, 3);
+    const passages = shuffleArray(BIBLE_PASSAGES).slice(0, count);
     return {
       type: "context",
       questions: passages.map((p, i) => {
@@ -134,7 +136,7 @@ function localFallback(
   } else {
     return {
       type: "verse-match",
-      pairs: shuffleArray(VERSE_MATCH_ITEMS).slice(0, 3),
+      pairs: shuffleArray(VERSE_MATCH_ITEMS).slice(0, count),
     };
   }
 }
@@ -296,7 +298,15 @@ export async function generatePracticeDrillAction(
   type: "memorization" | "context" | "verse-match" | "rearrange",
   config: PracticeConfig,
 ): Promise<DrillResult> {
-  const count = type === "rearrange" ? 1 : 3;
+  let count = 3;
+  if (type === "rearrange") {
+    count = 1;
+  } else if (type === "verse-match") {
+    count = Math.floor(Math.random() * 3) + 4; // 4 to 6
+  } else {
+    count = Math.floor(Math.random() * 3) + 4; // Updating others to 4-6 as well for variety, matching user expectations since they mentioned 4 to 6
+  }
+
   const passagesWithText = await fetchPassagesFromBibleApi(config, count);
   const seed = Date.now();
 

@@ -218,6 +218,18 @@ function appReducer(state: AppState, action: Action): AppState {
               ? (state.user.weeklyScore || 0) + state.workout!.totalScore
               : state.user.weeklyScore,
             lastWorkoutDate: today,
+            memorizationTotal:
+              (state.user.memorizationTotal || 0) +
+              (state.workout!.scores.memorization || 0),
+            contextTotal:
+              (state.user.contextTotal || 0) +
+              (state.workout!.scores.context || 0),
+            verseMatchTotal:
+              (state.user.verseMatchTotal || 0) +
+              (state.workout!.scores.verseMatch || 0),
+            rearrangeTotal:
+              (state.user.rearrangeTotal || 0) +
+              (state.workout!.scores.rearrange || 0),
           }
         : null;
 
@@ -292,6 +304,20 @@ function appReducer(state: AppState, action: Action): AppState {
           ...state.user,
           totalScore: state.user.totalScore + action.payload.score,
         };
+
+        if (action.payload.drillType === "memorization") {
+          updatedUser.memorizationTotal =
+            (state.user.memorizationTotal || 0) + action.payload.score;
+        } else if (action.payload.drillType === "context") {
+          updatedUser.contextTotal =
+            (state.user.contextTotal || 0) + action.payload.score;
+        } else if (action.payload.drillType === "verse-match") {
+          updatedUser.verseMatchTotal =
+            (state.user.verseMatchTotal || 0) + action.payload.score;
+        } else if (action.payload.drillType === "rearrange") {
+          updatedUser.rearrangeTotal =
+            (state.user.rearrangeTotal || 0) + action.payload.score;
+        }
 
         return {
           ...state,
@@ -398,10 +424,34 @@ function appReducer(state: AppState, action: Action): AppState {
             }
             console.error("Failed to sync mastery to Appwrite", e);
           });
+
+        // Also update User profile points for Mastery
+        const earnedPoints = Math.round(accuracy);
+        databases
+          .updateDocument(
+            APPWRITE_DB_ID,
+            APPWRITE_USERS_COLLECTION_ID,
+            state.user.id,
+            {
+              totalScore: state.user.totalScore + earnedPoints,
+              masteryTotal: (state.user.masteryTotal || 0) + earnedPoints,
+            },
+          )
+          .catch((e) =>
+            console.error("Failed to update user mastery points:", e),
+          );
       }
 
       return {
         ...state,
+        user: state.user
+          ? {
+              ...state.user,
+              totalScore: state.user.totalScore + Math.round(accuracy),
+              masteryTotal:
+                (state.user.masteryTotal || 0) + Math.round(accuracy),
+            }
+          : null,
         verseMastery: {
           ...state.verseMastery,
           [id]: updatedMastery,
@@ -639,14 +689,27 @@ export function usePractice() {
       .catch((e) => console.error("Failed to log practice history:", e));
 
     // 2. Update user score
+    const updatedStats: Partial<User> = {
+      totalScore: state.user.totalScore + score,
+    };
+
+    if (state.practiceDrillType === "memorization") {
+      updatedStats.memorizationTotal =
+        (state.user.memorizationTotal || 0) + score;
+    } else if (state.practiceDrillType === "context") {
+      updatedStats.contextTotal = (state.user.contextTotal || 0) + score;
+    } else if (state.practiceDrillType === "verse-match") {
+      updatedStats.verseMatchTotal = (state.user.verseMatchTotal || 0) + score;
+    } else if (state.practiceDrillType === "rearrange") {
+      updatedStats.rearrangeTotal = (state.user.rearrangeTotal || 0) + score;
+    }
+
     databases
       .updateDocument(
         APPWRITE_DB_ID,
         APPWRITE_USERS_COLLECTION_ID,
         state.user.id,
-        {
-          totalScore: state.user.totalScore + score,
-        },
+        updatedStats,
       )
       .catch((e) => console.error("Failed to update user score:", e));
 
@@ -897,6 +960,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 : null,
               groupId: profile.groupId || null,
               createdAt: currentAccount.$createdAt,
+              memorizationTotal: profile.memorizationTotal || 0,
+              contextTotal: profile.contextTotal || 0,
+              verseMatchTotal: profile.verseMatchTotal || 0,
+              rearrangeTotal: profile.rearrangeTotal || 0,
+              masteryTotal: profile.masteryTotal || 0,
+              masteryConsistency: profile.masteryConsistency || 0,
+              masteredCount: profile.masteredCount || 0,
             };
 
             // Check if we need to reset the weekly score
