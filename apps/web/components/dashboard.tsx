@@ -578,14 +578,18 @@ export function Dashboard() {
             </div>
 
             {/* Promo/Tip Box */}
-            <div className="rounded-3xl bg-primary/10 border-2 border-dashed border-primary p-6 text-center">
-              <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h4 className="font-black text-foreground mb-1">Did you know?</h4>
-              <p className="text-xs font-bold text-muted-foreground">
-                Training with a group increases your consistency by 40%. Join a
-                squad today!
-              </p>
-            </div>
+            {!user.groupId && (
+              <div className="rounded-3xl bg-primary/10 border-2 border-dashed border-primary p-6 text-center">
+                <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+                <h4 className="font-black text-foreground mb-1">
+                  Did you know?
+                </h4>
+                <p className="text-xs font-bold text-muted-foreground">
+                  Training with a group increases your consistency by 40%. Join
+                  a squad today!
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>

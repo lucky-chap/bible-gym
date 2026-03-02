@@ -267,6 +267,19 @@ async function main() {
         } catch (e: any) {
           if (e.code !== 409) throw e;
         }
+        try {
+          await db.createStringAttribute(
+            dbId,
+            collId,
+            "leftMembers",
+            255,
+            false,
+            undefined,
+            true,
+          );
+        } catch (e: any) {
+          if (e.code !== 409) throw e;
+        }
       },
     );
 

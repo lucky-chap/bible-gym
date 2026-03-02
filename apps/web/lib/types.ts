@@ -32,6 +32,7 @@ export interface Group {
   createdAt: string;
   groupChallenge?: Workout | null;
   challengeParticipants?: string[]; // user IDs who finished the current challenge
+  leftMembers?: string[]; // user IDs who left the group
 }
 
 export interface GroupMember {
@@ -40,6 +41,7 @@ export interface GroupMember {
   avatarInitials: string;
   weeklyScore: number;
   streak: number;
+  hasLeft?: boolean;
 }
 
 // ── Drill Types ─────────────────────────────────────────────

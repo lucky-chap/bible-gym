@@ -9,6 +9,7 @@ import {
 } from "@/lib/store";
 import { obfuscateApiKey, deobfuscateApiKey } from "@/lib/security";
 import { generateThemedWorkout } from "@/app/actions/generate-drills";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   Trophy,
@@ -23,6 +24,10 @@ import {
   Sparkles,
   Loader2,
   Key,
+  LogOut,
+  Trash2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 
 export function GroupScreen() {
@@ -35,7 +40,11 @@ export function GroupScreen() {
     joinGroup,
     setGroupChallenge,
     deleteGroupChallenge,
+    refreshGroupData,
+    leaveGroup,
+    deleteGroup,
   } = useGroups();
+  const user = state.user;
   const [tab, setTab] = useState<"leaderboard" | "join" | "create">(
     userGroup || state.user?.groupId ? "leaderboard" : "join",
   );
@@ -47,9 +56,30 @@ export function GroupScreen() {
     }
   }, [userGroup, state.user?.groupId, tab]);
 
+  // Sync back to join if group is gone
+  useEffect(() => {
+    if (!userGroup && !state.user?.groupId && tab === "leaderboard") {
+      setTab("join");
+    }
+  }, [userGroup, state.user?.groupId, tab]);
+
   useEffect(() => {
     dispatch({ type: "SET_VIEW", payload: "group" });
-  }, [dispatch]);
+    if (user?.groupId) {
+      refreshGroupData(user.groupId);
+    }
+  }, [dispatch, user?.groupId]);
+
+  // Periodically check group status (mitigate deleted groups)
+  useEffect(() => {
+    if (!user?.groupId) return;
+
+    const interval = setInterval(() => {
+      refreshGroupData(user.groupId!);
+    }, 60000); // Check once a minute
+
+    return () => clearInterval(interval);
+  }, [user?.groupId, refreshGroupData]);
 
   const [groupName, setGroupName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -61,6 +91,8 @@ export function GroupScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem("gemini_api_key");
@@ -78,7 +110,6 @@ export function GroupScreen() {
 
   const { startGroupChallenge } = useWorkout();
 
-  const user = state.user;
   if (!user) return null;
 
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -225,7 +256,8 @@ export function GroupScreen() {
                     {userGroup.name}
                   </h2>
                   <p className="text-sm text-muted-foreground font-medium">
-                    {userGroup.members.length + 5} members
+                    {userGroup.members.length}{" "}
+                    {userGroup.members.length === 1 ? "member" : "members"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -243,6 +275,31 @@ export function GroupScreen() {
                       <Copy className="w-4 h-4" />
                     )}
                   </button>
+                  {user.id === userGroup.createdBy ? (
+                    <button
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border-2 border-red-200 text-xs font-bold hover:bg-red-500 hover:text-white hover:border-foreground transition-all ml-1"
+                      style={{ boxShadow: "2px 2px 0px 0px #EF4444" }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm("Are you sure you want to leave this group?")
+                        ) {
+                          leaveGroup();
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border-2 border-red-200 text-xs font-bold hover:bg-red-500 hover:text-white hover:border-foreground transition-all ml-1"
+                      style={{ boxShadow: "2px 2px 0px 0px #EF4444" }}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Leave
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -431,12 +488,16 @@ export function GroupScreen() {
                     className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
                       isCurrentUser
                         ? "border-foreground bg-primary/10"
-                        : "border-foreground bg-card"
+                        : member.hasLeft
+                          ? "border-muted-foreground/20 bg-muted/50 grayscale opacity-70"
+                          : "border-foreground bg-card"
                     }`}
                     style={{
                       boxShadow: isCurrentUser
                         ? "3px 3px 0px 0px var(--primary)"
-                        : "3px 3px 0px 0px var(--foreground)",
+                        : member.hasLeft
+                          ? "none"
+                          : "3px 3px 0px 0px var(--foreground)",
                     }}
                   >
                     <div className="w-8 flex items-center justify-center">
@@ -458,6 +519,11 @@ export function GroupScreen() {
                         {isCurrentUser && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-white border-2 border-foreground font-bold">
                             You
+                          </span>
+                        )}
+                        {member.hasLeft && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-muted-foreground/30 font-bold uppercase tracking-tighter">
+                            Left Group
                           </span>
                         )}
                       </div>
@@ -605,6 +671,91 @@ export function GroupScreen() {
           </div>
         )}
       </main>
+
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-card border-2 border-foreground rounded-3xl p-8 overflow-hidden"
+              style={{ boxShadow: "8px 8px 0px 0px var(--foreground)" }}
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-red-500" />
+
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-muted transition-colors border-2 border-transparent hover:border-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center border-2 border-red-200">
+                  <AlertTriangle className="w-8 h-8 text-red-500" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-foreground">
+                    Delete Group?
+                  </h3>
+                  <p className="text-muted-foreground font-medium">
+                    Wait! As the creator, deleting{" "}
+                    <span className="text-foreground font-bold italic">
+                      "{userGroup?.name}"
+                    </span>{" "}
+                    will remove all members from it.
+                  </p>
+                  <p className="text-xs text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100">
+                    Personal scores are kept, but the group will be gone
+                    forever. This cannot be undone.
+                  </p>
+                </div>
+
+                <div className="flex flex-col w-full gap-3 pt-4">
+                  <button
+                    onClick={async () => {
+                      setIsDeleting(true);
+                      const success = await deleteGroup();
+                      setIsDeleting(false);
+                      if (success) {
+                        setIsDeleteModalOpen(false);
+                        dispatch({ type: "SET_VIEW", payload: "dashboard" });
+                      }
+                    }}
+                    disabled={isDeleting}
+                    className="w-full py-4 bg-red-500 text-white font-black text-lg rounded-2xl border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      "Yes, Delete Forever"
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="w-full py-4 bg-card text-foreground font-bold text-lg rounded-2xl border-2 border-foreground hover:bg-muted transition-all"
+                  >
+                    Actually, Keep It
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

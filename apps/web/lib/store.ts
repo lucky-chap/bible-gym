@@ -870,22 +870,63 @@ export function useMastery() {
 export function useGroups() {
   const state = useAppState();
   const dispatch = useAppDispatch();
-
   const refreshGroupData = async (groupId: string) => {
     try {
       // 1. Fetch group details
-      const groupDoc = await databases.getDocument(
-        APPWRITE_DB_ID,
-        APPWRITE_GROUPS_COLLECTION_ID,
-        groupId,
-      );
-      dispatch({ type: "SET_GROUPS", payload: [groupDoc as any] });
+      let groupDoc;
+      try {
+        groupDoc = await databases.getDocument(
+          APPWRITE_DB_ID,
+          APPWRITE_GROUPS_COLLECTION_ID,
+          groupId,
+        );
+      } catch (e: any) {
+        // If 404 (document not found) or similar, the group might have been deleted
+        if (e.code === 404 || e.message?.toLowerCase().includes("not found")) {
+          console.warn("Group not found, clearing state");
+          dispatch({ type: "SET_GROUPS", payload: [] });
+          dispatch({ type: "SET_GROUP_MEMBERS", payload: [] });
 
-      // 2. Fetch members (users with this groupId)
+          // Also verify/clear user's groupId if it's still there locally
+          if (state.user?.id) {
+            try {
+              const userDoc = await databases.getDocument(
+                APPWRITE_DB_ID,
+                APPWRITE_USERS_COLLECTION_ID,
+                state.user.id,
+              );
+              if (userDoc.groupId === null) {
+                dispatch({
+                  type: "SET_USER",
+                  payload: { ...state.user, groupId: null },
+                });
+              }
+            } catch (userErr) {
+              console.error("Error verifying user groupId:", userErr);
+            }
+          }
+          return false;
+        }
+        throw e;
+      }
+
+      dispatch({ type: "SET_GROUPS", payload: [parseGroupDoc(groupDoc)] });
+
+      // 2. Fetch all members (both active and those who have left)
+      const allMemberIds = [
+        ...(groupDoc.members || []),
+        ...(groupDoc.leftMembers || []),
+      ];
+
+      if (allMemberIds.length === 0) {
+        dispatch({ type: "SET_GROUP_MEMBERS", payload: [] });
+        return;
+      }
+
       const usersResponse = await databases.listDocuments(
         APPWRITE_DB_ID,
         APPWRITE_USERS_COLLECTION_ID,
-        [Query.equal("groupId", groupId), Query.limit(100)],
+        [Query.equal("$id", allMemberIds), Query.limit(100)],
       );
 
       const members: GroupMember[] = usersResponse.documents.map(
@@ -900,6 +941,7 @@ export function useGroups() {
             .slice(0, 2),
           weeklyScore: doc.weeklyScore || 0,
           streak: doc.streak || 0,
+          hasLeft: groupDoc.leftMembers?.includes(doc.$id) || false,
         }),
       );
 
@@ -998,7 +1040,7 @@ export function useGroups() {
         { groupId: groupId },
       );
 
-      dispatch({ type: "JOIN_GROUP", payload: groupDoc as any });
+      dispatch({ type: "JOIN_GROUP", payload: parseGroupDoc(groupDoc) });
       await refreshGroupData(groupId);
       return true;
     } catch (e) {
@@ -1045,6 +1087,123 @@ export function useGroups() {
     }
   };
 
+  const leaveGroup = async () => {
+    if (!state.user?.groupId) return false;
+    const groupId = state.user.groupId;
+    const userId = state.user.id;
+
+    try {
+      // 1. Get current group data
+      const groupDoc = await databases.getDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        groupId,
+      );
+
+      // Security: Creator cannot leave, they must delete
+      if (groupDoc.createdBy === userId) {
+        console.error("Creator cannot leave the group. Use delete instead.");
+        return false;
+      }
+
+      const currentMembers = (groupDoc.members || []) as string[];
+      const currentLeftMembers = (groupDoc.leftMembers || []) as string[];
+
+      // 2. Update group: remove from members, add to leftMembers
+      await databases.updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        groupId,
+        {
+          members: currentMembers.filter((id) => id !== userId),
+          leftMembers: Array.from(new Set([...currentLeftMembers, userId])),
+        },
+      );
+
+      // 3. Update user: clear groupId
+      await databases.updateDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_USERS_COLLECTION_ID,
+        userId,
+        { groupId: null },
+      );
+
+      // 4. Update local state
+      dispatch({
+        type: "SET_USER",
+        payload: { ...state.user, groupId: null },
+      });
+      // Clear groups local state
+      dispatch({ type: "SET_GROUPS", payload: [] });
+      dispatch({ type: "SET_GROUP_MEMBERS", payload: [] });
+
+      return true;
+    } catch (e) {
+      console.error("Failed to leave group:", e);
+      return false;
+    }
+  };
+
+  const deleteGroup = async () => {
+    if (!state.user?.groupId) return false;
+    const groupId = state.user.groupId;
+    const userId = state.user.id;
+
+    try {
+      // 1. Get current group data
+      const groupDoc = await databases.getDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        groupId,
+      );
+
+      // Security check: only creator can delete
+      if (groupDoc.createdBy !== userId) {
+        console.error("Only the creator can delete the group");
+        return false;
+      }
+
+      const allMemberIds = Array.from(
+        new Set([...(groupDoc.members || []), ...(groupDoc.leftMembers || [])]),
+      );
+
+      // 2. Clear groupId for all related users
+      // This ensures they are no longer linked to this group
+      await Promise.all(
+        allMemberIds.map((id) =>
+          databases
+            .updateDocument(APPWRITE_DB_ID, APPWRITE_USERS_COLLECTION_ID, id, {
+              groupId: null,
+            })
+            .catch((err) => {
+              // Silently handle if user doc not found or other issues
+              console.error(`Error clearing groupId for user ${id}:`, err);
+            }),
+        ),
+      );
+
+      // 3. Delete the group document
+      await databases.deleteDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_GROUPS_COLLECTION_ID,
+        groupId,
+      );
+
+      // 4. Update local state
+      dispatch({
+        type: "SET_USER",
+        payload: { ...state.user, groupId: null },
+      });
+      dispatch({ type: "SET_GROUPS", payload: [] });
+      dispatch({ type: "SET_GROUP_MEMBERS", payload: [] });
+
+      return true;
+    } catch (e) {
+      console.error("Failed to delete group:", e);
+      return false;
+    }
+  };
+
   return {
     groupMembers: state.groupMembers,
     userGroup: state.groups.find((g) => g.id === state.user?.groupId),
@@ -1053,7 +1212,21 @@ export function useGroups() {
     setGroupChallenge,
     deleteGroupChallenge,
     refreshGroupData,
+    leaveGroup,
+    deleteGroup,
   };
+}
+
+function parseGroupDoc(doc: any): Group {
+  return {
+    ...doc,
+    id: doc.$id,
+    groupChallenge:
+      typeof doc.groupChallenge === "string"
+        ? JSON.parse(doc.groupChallenge)
+        : doc.groupChallenge || null,
+    leftMembers: doc.leftMembers || [],
+  } as unknown as Group;
 }
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -1150,26 +1323,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const fetchAndDispatchGroupData = async (groupId: string) => {
             try {
               // 1. Fetch group details
-              const groupDoc = await databases.getDocument(
-                APPWRITE_DB_ID,
-                APPWRITE_GROUPS_COLLECTION_ID,
-                groupId,
-              );
+              let groupDoc;
+              try {
+                groupDoc = await databases.getDocument(
+                  APPWRITE_DB_ID,
+                  APPWRITE_GROUPS_COLLECTION_ID,
+                  groupId,
+                );
+              } catch (e: any) {
+                // If the group is deleted (404), there's no group and no members to load.
+                if (
+                  e.code === 404 ||
+                  e.message?.toLowerCase().includes("not found")
+                ) {
+                  console.warn("Group not found during init app");
+                  return;
+                }
+                throw e;
+              }
 
-              // Parse group challenge from JSON string
-              const parsedGroupDoc = {
-                ...groupDoc,
-                id: groupDoc.$id,
-                groupChallenge: groupDoc.groupChallenge
-                  ? JSON.parse(groupDoc.groupChallenge)
-                  : null,
-              } as unknown as Group;
+              const parsedGroupDoc = parseGroupDoc(groupDoc);
 
-              // 2. Fetch members (users with this groupId)
+              // 2. Fetch all members (both active and those who have left)
+              const allMemberIds = [
+                ...(groupDoc.members || []),
+                ...(groupDoc.leftMembers || []),
+              ];
+
+              if (allMemberIds.length === 0) {
+                dispatch({
+                  type: "LOAD_STATE",
+                  payload: {
+                    groups: [parsedGroupDoc],
+                    groupMembers: [],
+                  },
+                });
+                return;
+              }
+
               const usersResponse = await databases.listDocuments(
                 APPWRITE_DB_ID,
                 APPWRITE_USERS_COLLECTION_ID,
-                [Query.equal("groupId", groupId), Query.limit(100)],
+                [Query.equal("$id", allMemberIds), Query.limit(100)],
               );
 
               const members: GroupMember[] = usersResponse.documents.map(
@@ -1184,6 +1379,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     .slice(0, 2),
                   weeklyScore: doc.weeklyScore || 0,
                   streak: doc.streak || 0,
+                  hasLeft: groupDoc.leftMembers?.includes(doc.$id) || false,
                 }),
               );
 
