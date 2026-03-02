@@ -7,6 +7,7 @@ import {
   useGroups,
   useWorkout,
 } from "@/lib/store";
+import { obfuscateApiKey, deobfuscateApiKey } from "@/lib/security";
 import { generateThemedWorkout } from "@/app/actions/generate-drills";
 import {
   Users,
@@ -64,20 +65,15 @@ export function GroupScreen() {
   useEffect(() => {
     const savedKey = localStorage.getItem("gemini_api_key");
     if (savedKey) {
-      try {
-        // Obfuscate by decoding from Base64
-        setUserApiKey(atob(savedKey));
-      } catch (e) {
-        // Fallback for non-encoded legacy keys
-        setUserApiKey(savedKey);
-      }
+      // Unhash (deobfuscate) the key for use
+      setUserApiKey(deobfuscateApiKey(savedKey));
     }
   }, []);
 
   const handleSaveApiKey = (key: string) => {
     setUserApiKey(key);
-    // Securely store by encoding to Base64 (obfuscation)
-    localStorage.setItem("gemini_api_key", btoa(key));
+    // Securely store by hashing (obfuscating) the key
+    localStorage.setItem("gemini_api_key", obfuscateApiKey(key));
   };
 
   const { startGroupChallenge } = useWorkout();

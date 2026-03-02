@@ -11,7 +11,8 @@ export const MASTERY_PACKS: MasteryPack[] = [
   {
     id: "salvation",
     name: "Salvation",
-    description: "The foundations of the Gospel and God's gift of eternal life.",
+    description:
+      "The foundations of the Gospel and God's gift of eternal life.",
     verses: [
       {
         reference: "John 3:16",
@@ -179,7 +180,8 @@ export const MASTERY_PACKS: MasteryPack[] = [
   {
     id: "discipline",
     name: "Spiritual Discipline",
-    description: "Training ourselves in godliness and persevering in our faith.",
+    description:
+      "Training ourselves in godliness and persevering in our faith.",
     verses: [
       {
         reference: "1 Timothy 4:7-8",
@@ -215,6 +217,133 @@ export const MASTERY_PACKS: MasteryPack[] = [
         book: "Galatians",
         chapter: 6,
         verses: "9",
+      },
+    ],
+  },
+  {
+    id: "strength",
+    name: "Strength & Peace",
+    description: "Finding refuge and power in God during difficult seasons.",
+    verses: [
+      {
+        reference: "Isaiah 41:10",
+        text: "Fear thou not; for I am with thee: be not dismayed; for I am thy God: I will strengthen thee; yea, I will help thee; yea, I will uphold thee with the right hand of my righteousness.",
+        book: "Isaiah",
+        chapter: 41,
+        verses: "10",
+      },
+      {
+        reference: "Philippians 4:6-7",
+        text: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God. And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus.",
+        book: "Philippians",
+        chapter: 4,
+        verses: "6-7",
+      },
+      {
+        reference: "Psalm 46:1",
+        text: "God is our refuge and strength, a very present help in trouble.",
+        book: "Psalm",
+        chapter: 46,
+        verses: "1",
+      },
+      {
+        reference: "Isaiah 40:31",
+        text: "But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint.",
+        book: "Isaiah",
+        chapter: 40,
+        verses: "31",
+      },
+      {
+        reference: "John 14:27",
+        text: "Peace I leave with you, my peace I give unto you: not as the world giveth, give I unto you. Let not your heart be troubled, neither let it be afraid.",
+        book: "John",
+        chapter: 14,
+        verses: "27",
+      },
+    ],
+  },
+  {
+    id: "prayer",
+    name: "Prayer",
+    description:
+      "Communicating with God and seeking His will through daily petition.",
+    verses: [
+      {
+        reference: "1 Thessalonians 5:17",
+        text: "Pray without ceasing.",
+        book: "1 Thessalonians",
+        chapter: 5,
+        verses: "17",
+      },
+      {
+        reference: "Jeremiah 33:3",
+        text: "Call unto me, and I will answer thee, and shew thee great and mighty things, which thou knowest not.",
+        book: "Jeremiah",
+        chapter: 33,
+        verses: "3",
+      },
+      {
+        reference: "Matthew 6:6",
+        text: "But thou, when thou prayest, enter into thy closet, and when thou hast shut thy door, pray to thy Father which is in secret; and thy Father which seeth in secret shall reward thee openly.",
+        book: "Matthew",
+        chapter: 6,
+        verses: "6",
+      },
+      {
+        reference: "Philippians 4:6",
+        text: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God.",
+        book: "Philippians",
+        chapter: 4,
+        verses: "6",
+      },
+      {
+        reference: "Hebrews 4:16",
+        text: "Let us therefore come boldly unto the throne of grace, that we may obtain mercy, and find grace to help in time of need.",
+        book: "Hebrews",
+        chapter: 4,
+        verses: "16",
+      },
+    ],
+  },
+  {
+    id: "love",
+    name: "Love & Unity",
+    description: "The greatest commandment and the bond of the church body.",
+    verses: [
+      {
+        reference: "1 Corinthians 13:4-7",
+        text: "Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up, Doth not behave itself unseemly, seeketh not her own, is not easily provoked, thinketh no evil; Rejoiceth not in iniquity, but rejoiceth in the truth; Beareth all things, believeth all things, hopeth all things, endureth all things.",
+        book: "1 Corinthians",
+        chapter: 13,
+        verses: "4-7",
+      },
+      {
+        reference: "John 13:34-35",
+        text: "A new commandment I give unto you, That ye love one another; as I have loved you, that ye also love one another. By this shall all men know that ye are my disciples, if ye have love one to another.",
+        book: "John",
+        chapter: 13,
+        verses: "34-35",
+      },
+      {
+        reference: "1 Peter 4:8",
+        text: "And above all things have fervent charity among yourselves: for charity shall cover the multitude of sins.",
+        book: "1 Peter",
+        chapter: 4,
+        verses: "8",
+      },
+      {
+        reference: "1 John 4:7-8",
+        text: "Beloved, let us love one another: for love is of God; and every one that loveth is born of God, and knoweth God. He that loveth not knoweth not God; for God is love.",
+        book: "1 John",
+        chapter: 4,
+        verses: "7-8",
+      },
+      {
+        reference: "Colossians 3:14",
+        text: "And above all these things put on charity, which is the bond of perfectness.",
+        book: "Colossians",
+        chapter: 3,
+        verses: "14",
       },
     ],
   },

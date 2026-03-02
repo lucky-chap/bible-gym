@@ -22,6 +22,7 @@ import {
   BookOpen,
   GripVertical,
   HelpCircle,
+  X,
 } from "lucide-react";
 import {
   Popover,
@@ -385,13 +386,19 @@ export function Dashboard() {
                 </div>
 
                 {showMasterySelector && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-4 border-foreground rounded-3xl p-8 md:p-12 shadow-[12px 12px 0px 0px_rgba(0,0,0,1)]">
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300"
+                    onClick={() => setShowMasterySelector(false)}
+                  >
+                    <div
+                      className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-4 border-foreground rounded-3xl p-8 md:p-12 shadow-[12px 12px 0px 0px_rgba(0,0,0,1)]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
                         onClick={() => setShowMasterySelector(false)}
-                        className="absolute top-6 right-6 p-2 rounded-xl bg-muted border-2 border-foreground hover:translate-y-[-2px] transition-all"
+                        className="absolute top-3 right-6 p-2 rounded-xl bg-muted border-2 border-foreground hover:translate-y-[-2px] transition-all"
                       >
-                        <ChevronRight className="w-6 h-6 rotate-90" />
+                        <X className="w-6 h-6" />
                       </button>
                       <VerseSelector />
                     </div>
