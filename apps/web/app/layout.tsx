@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
-import { AppProvider } from "@/lib/store";
+import { AppProvider } from "@/lib/store/context";
 import { SharedLayout } from "@/components/shared-layout";
 
 const bricolage = Bricolage_Grotesque({
