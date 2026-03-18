@@ -28,8 +28,9 @@ export function useMastery() {
 
       // Persist to Convex
       upsertMasteryMutation({
-        reference: verse.reference,
-        passage: JSON.stringify(verse),
+        referenceId: verse.reference,
+        passageReference: JSON.stringify(verse),
+        passageText: verse.text,
         currentLevel: 1,
         bestAccuracy: 0,
         bestTime: 0,
@@ -58,8 +59,9 @@ export function useMastery() {
     if (existing) {
       // Persist to Convex
       upsertMasteryMutation({
-        reference: id,
-        passage: JSON.stringify(existing.passage),
+        passageText: existing.passage.text,
+        referenceId: id,
+        passageReference: JSON.stringify(existing.passage),
         currentLevel: level + 1, // Advance to next level?
         // Actually the logic for level advancement is usually in the reducer,
         // but I should sync the new state.
