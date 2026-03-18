@@ -116,5 +116,5 @@ export type Action =
       };
     }
   | { type: "LOAD_STATE"; payload: Partial<AppState> }
-  | { type: "INITIALIZE_APPWRITE_USER"; payload: User }
+  | { type: "INITIALIZE_USER"; payload: User }
   | { type: "EXIT_DRILL" };

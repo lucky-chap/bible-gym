@@ -40,7 +40,7 @@ export default function WhyThisPage() {
 
           <section className="space-y-6 text-lg md:text-xl leading-relaxed font-medium">
             <p>
-              Yo! I&apos;m the one behind Bible Gym. I built this because I
+              Yo! I&apos;m the one behind Word Mastery. I built this because I
               realized something convicting: I was spending more time tracking
               my bench press and my daily steps than I was tracking my spiritual
               growth. This{" "}
@@ -63,9 +63,9 @@ export default function WhyThisPage() {
               encouragement or when I was facing a hard day.
             </p>
             <p>
-              Bible Gym is my way of taking that same high-intensity, structured
-              approach to the Word of God. It&apos;s not just about reading;
-              it&apos;s about <strong>training</strong>.
+              Word Mastery is my way of taking that same high-intensity,
+              structured approach to the Word of God. It&apos;s not just about
+              reading; it&apos;s about <strong>training</strong>.
             </p>
           </section>
 

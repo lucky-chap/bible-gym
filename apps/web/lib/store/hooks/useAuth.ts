@@ -1,22 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { account } from "../../appwrite";
-import { OAuthProvider } from "appwrite";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useAppState, useAppDispatch } from "@/lib/store/context";
 
 export function useAuth() {
   const state = useAppState();
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { signIn, signOut } = useAuthActions();
 
   const login = async () => {
     try {
-      await account.createOAuth2Session(
-        OAuthProvider.Google,
-        `${window.location.origin}/dashboard`,
-        `${window.location.origin}/`,
-      );
+      await signIn("google", {
+        redirectTo: "/dashboard",
+      });
     } catch (error) {
       console.error("Google login failed", error);
     }
@@ -24,13 +22,13 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await account.deleteSession("current");
+      await signOut();
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
       dispatch({ type: "LOGOUT" });
       if (typeof window !== "undefined") {
-        localStorage.removeItem("bible-gym-state");
+        localStorage.removeItem("word-mastery-state");
       }
       router.push("/");
     }

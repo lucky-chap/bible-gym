@@ -22,7 +22,7 @@ export async function generateThemedWorkout(
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-You are an expert Bible teacher creating a "Spiritual Workout" for a web app called Bible Gym.
+You are an expert Bible teacher creating a "Spiritual Workout" for a web app called Word Mastery.
 The user has requested a workout based on the theme: "${theme}".
 
 Generate 3 distinct Bible passages related to this theme.

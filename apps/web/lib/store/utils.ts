@@ -3,7 +3,7 @@ import { Group } from "../types";
 export function parseGroupDoc(doc: any): Group {
   return {
     ...doc,
-    id: doc.$id,
+    id: doc._id || doc.$id,
     groupChallenge:
       typeof doc.groupChallenge === "string"
         ? JSON.parse(doc.groupChallenge)

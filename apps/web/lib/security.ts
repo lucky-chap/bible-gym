@@ -6,7 +6,7 @@ import CryptoJS from "crypto-js";
  */
 
 const SECRET_SALT =
-  process.env.NEXT_PUBLIC_SECRET_SALT || "bible-gym-salt-fallback";
+  process.env.NEXT_PUBLIC_SECRET_SALT || "word-mastery-salt-fallback";
 
 export function obfuscateApiKey(key: string): string {
   if (!key) return "";

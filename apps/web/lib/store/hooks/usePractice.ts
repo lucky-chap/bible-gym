@@ -3,13 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useAppState, useAppDispatch } from "@/lib/store/context";
 import { User, PracticeConfig } from "../../types";
-import {
-  databases,
-  APPWRITE_DB_ID,
-  APPWRITE_USERS_COLLECTION_ID,
-  APPWRITE_PRACTICE_COLLECTION_ID,
-} from "../../appwrite";
-import { ID } from "appwrite";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 export function usePractice() {
   const state = useAppState();
@@ -35,29 +30,25 @@ export function usePractice() {
     router.push(target);
   };
 
+  const logPracticeMutation = useMutation(api.practice.logPractice);
+  const updateProfileMutation = useMutation(api.users.updateProfile);
+
   const logPractice = async (score: number, accuracy: number = score) => {
     if (!state.practiceDrillType || !state.user) return;
 
-    databases
-      .createDocument(
-        APPWRITE_DB_ID,
-        APPWRITE_PRACTICE_COLLECTION_ID,
-        ID.unique(),
-        {
-          userId: state.user.id,
-          timestamp: new Date().toISOString(),
-          drillType: state.practiceDrillType,
-          score,
-          accuracy,
-          config: state.practiceConfig
-            ? JSON.stringify(state.practiceConfig)
-            : null,
-        },
-      )
-      .catch((e) => console.error("Failed to log practice history:", e));
+    // Log practice history to Convex
+    logPracticeMutation({
+      timestamp: new Date().toISOString(),
+      drillType: state.practiceDrillType,
+      score,
+      accuracy,
+      config: state.practiceConfig
+        ? JSON.stringify(state.practiceConfig)
+        : undefined,
+    }).catch((e) => console.error("Failed to log practice history:", e));
 
-    const updatedStats: Partial<User> = {
-      totalScore: state.user.totalScore + score,
+    const updatedStats: any = {
+      totalScore: (state.user.totalScore || 0) + score,
     };
 
     if (state.practiceDrillType === "memorization") {
@@ -71,14 +62,10 @@ export function usePractice() {
       updatedStats.rearrangeTotal = (state.user.rearrangeTotal || 0) + score;
     }
 
-    databases
-      .updateDocument(
-        APPWRITE_DB_ID,
-        APPWRITE_USERS_COLLECTION_ID,
-        state.user.id,
-        updatedStats,
-      )
-      .catch((e) => console.error("Failed to update user score:", e));
+    // Update user profile in Convex
+    updateProfileMutation(updatedStats).catch((e) =>
+      console.error("Failed to update user score:", e),
+    );
 
     dispatch({
       type: "LOG_PRACTICE_SCORE",

@@ -60,7 +60,7 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
                 <Dumbbell className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-extrabold text-foreground tracking-tight">
-                Bible Gym
+                Word Mastery
               </span>
             </div>
           )}
@@ -131,7 +131,7 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
             <div className="w-8 h-8 rounded-lg bg-primary border-2 border-white/20 flex items-center justify-center">
               <Dumbbell className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-bold text-white">Bible Gym</span>
+            <span className="text-sm font-bold text-white">Word Mastery</span>
           </div>
           <p className="text-xs text-gray-400">
             Train your spirit. Grow your faith.

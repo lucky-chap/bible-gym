@@ -4,14 +4,8 @@ import { useRouter } from "next/navigation";
 import { useAppState, useAppDispatch } from "@/lib/store/context";
 import { Workout } from "../types";
 import { generateDailyWorkout } from "../../workout-generator";
-import {
-  databases,
-  APPWRITE_DB_ID,
-  APPWRITE_USERS_COLLECTION_ID,
-  APPWRITE_WORKOUTS_COLLECTION_ID,
-  APPWRITE_GROUPS_COLLECTION_ID,
-} from "../../appwrite";
-import { ID } from "appwrite";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 export function useWorkout() {
   const state = useAppState();
@@ -43,6 +37,9 @@ export function useWorkout() {
     dispatch({ type: "START_WORKOUT", payload: challenge });
     router.push("/workout");
   };
+
+  const saveWorkoutMutation = useMutation(api.workouts.saveWorkout);
+  const updateProfileMutation = useMutation(api.users.updateProfile);
 
   const handleDrillComplete = async (drillType: string, score: number) => {
     dispatch({ type: "COMPLETE_DRILL", payload: { drillType, score } });
@@ -80,38 +77,28 @@ export function useWorkout() {
           updatedScores.verseMatch +
           (updatedScores.rearrange || 0);
 
-        const totalScore = state.user.totalScore + finalWorkoutTotal;
+        const totalScore = (state.user.totalScore || 0) + finalWorkoutTotal;
         const weeklyScore = state.workout.isGroupChallenge
           ? (state.user.weeklyScore || 0) + finalWorkoutTotal
           : state.user.weeklyScore;
 
         try {
-          await databases.updateDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_USERS_COLLECTION_ID,
-            state.user.id,
-            {
-              streak: newStreak,
-              totalScore,
-              weeklyScore,
-              lastWorkoutDate: today,
-            },
-          );
+          // Sync to Convex
+          await updateProfileMutation({
+            streak: newStreak,
+            totalScore,
+            weeklyScore,
+            lastWorkoutDate: today,
+          });
 
-          await databases.createDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_WORKOUTS_COLLECTION_ID,
-            ID.unique(),
-            {
-              userId: state.user.id,
-              date: today,
-              totalScore: finalWorkoutTotal,
-              memorizationScore: updatedScores.memorization,
-              contextScore: updatedScores.context,
-              verseMatchScore: updatedScores.verseMatch,
-              rearrangeScore: updatedScores.rearrange,
-            },
-          );
+          await saveWorkoutMutation({
+            date: today,
+            totalScore: finalWorkoutTotal,
+            memorizationScore: updatedScores.memorization,
+            contextScore: updatedScores.context,
+            verseMatchScore: updatedScores.verseMatch,
+            rearrangeScore: updatedScores.rearrange || 0,
+          });
         } catch (e) {
           console.error("Failed to sync workout data:", e);
         }

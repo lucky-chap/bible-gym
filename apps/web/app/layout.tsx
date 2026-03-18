@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+
 import { AppProvider } from "@/lib/store/context";
 import { SharedLayout } from "@/components/shared-layout";
+import { ConvexClientProvider } from "@/components/providers/convex-provider";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -17,7 +20,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Bible Gym — Train Your Spirit Like an Athlete",
+  title: "Word Mastery — Train Your Spirit Like an Athlete",
   description:
     "A gamified Bible study platform with daily spiritual workouts. Memorization drills, context challenges, and verse matching — structured training for Scripture mastery.",
   keywords: [
@@ -35,12 +38,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${dmSans.variable}`}>
-      <body className="font-sans antialiased bg-background text-foreground">
-        <AppProvider>
-          <SharedLayout>{children}</SharedLayout>
-        </AppProvider>
-      </body>
-    </html>
+    <ConvexAuthNextjsServerProvider>
+      <html
+        suppressHydrationWarning
+        lang="en"
+        className={`${bricolage.variable} ${dmSans.variable}`}
+      >
+        <body className="font-sans antialiased bg-background text-foreground">
+          <ConvexClientProvider>
+            <AppProvider>
+              <SharedLayout>{children}</SharedLayout>
+            </AppProvider>
+          </ConvexClientProvider>
+        </body>
+      </html>
+    </ConvexAuthNextjsServerProvider>
   );
 }

@@ -1,12 +1,12 @@
-# 🕊️ Bible Gym — Train Your Spirit
+# 🕊️ Word Mastery — Train Your Spirit
 
 > "Physical training is good, but training for godliness is much better, promising benefits in this life and the life to come." — 1 Timothy 4:8
 
-Welcome to **Bible Gym**, a high-intensity developer-led experiment in spiritual fitness. We took the psychology of a modern fitness app—the streaks, the stats, the "just one more set" addiction—and applied it to the most important "muscle" you own: your spirit.
+Welcome to **Word Mastery**, a high-intensity developer-led experiment in spiritual fitness. We took the psychology of a modern fitness app—the streaks, the stats, the "just one more set" addiction—and applied it to the most important "muscle" you own: your spirit.
 
 ## 💪 The Workout Philosophy
 
-Bible Gym isn't a library; it's a training ground. We believe that Scripture should be **etched into the heart**, not just glanced at on a screen. Every day, the gym generates a **Global Daily Workout** for the entire community.
+Word Mastery isn't a library; it's a training ground. We believe that Scripture should be **etched into the heart**, not just glanced at on a screen. Every day, the gym generates a **Global Daily Workout** for the entire community.
 
 ### 🏋️ The Drills
 

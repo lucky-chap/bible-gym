@@ -1,21 +1,12 @@
 import { AppState, Action, initialState } from "./types";
 import { User, VerseMastery, MasteryLevel } from "../types";
-import {
-  databases,
-  APPWRITE_DB_ID,
-  APPWRITE_USERS_COLLECTION_ID,
-  APPWRITE_WORKOUTS_COLLECTION_ID,
-  APPWRITE_GROUPS_COLLECTION_ID,
-  APPWRITE_MASTERY_COLLECTION_ID,
-} from "../appwrite";
-import { ID } from "appwrite";
 
 export function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_USER":
       return { ...state, user: action.payload };
 
-    case "INITIALIZE_APPWRITE_USER":
+    case "INITIALIZE_USER":
       return {
         ...state,
         user: action.payload,
@@ -151,67 +142,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         });
       }
 
-      // Sync progress to Appwrite
-      if (state.user && updatedUser) {
-        // 1. Update User Profile
-        databases
-          .updateDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_USERS_COLLECTION_ID,
-            state.user.id,
-            {
-              streak: updatedUser.streak,
-              totalScore: updatedUser.totalScore,
-              weeklyScore: updatedUser.weeklyScore,
-              lastWorkoutDate: updatedUser.lastWorkoutDate,
-              memorizationTotal: updatedUser.memorizationTotal,
-              contextTotal: updatedUser.contextTotal,
-              verseMatchTotal: updatedUser.verseMatchTotal,
-              rearrangeTotal: updatedUser.rearrangeTotal,
-            },
-          )
-          .catch((e) => console.error("Failed to sync user profile", e));
-
-        // 2. Log Workout Result
-        databases
-          .createDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_WORKOUTS_COLLECTION_ID,
-            ID.unique(),
-            {
-              userId: state.user.id,
-              date: today,
-              totalScore: state.workout.totalScore,
-              memorizationScore: state.workout.scores.memorization || 0,
-              contextScore: state.workout.scores.context || 0,
-              verseMatchScore: state.workout.scores.verseMatch || 0,
-              rearrangeScore: state.workout.scores.rearrange || 0,
-            },
-          )
-          .catch((e) => console.error("Failed to log workout", e));
-
-        // 3. Update Group Challenge Participants
-        if (state.workout.isGroupChallenge && state.user.groupId) {
-          const group = state.groups.find((g) => g.id === state.user!.groupId);
-          if (group) {
-            const participants = group.challengeParticipants || [];
-            if (!participants.includes(state.user.id)) {
-              databases
-                .updateDocument(
-                  APPWRITE_DB_ID,
-                  APPWRITE_GROUPS_COLLECTION_ID,
-                  group.id,
-                  {
-                    challengeParticipants: [...participants, state.user.id],
-                  },
-                )
-                .catch((e) =>
-                  console.error("Failed to update group participants", e),
-                );
-            }
-          }
-        }
-      }
+      // Sync progress to Appwrite - REMOVED (Handled in useWorkout hook for Convex)
 
       return {
         ...state,
@@ -332,68 +263,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         updatedStats.totalMastered += 1;
       }
 
-      // Sync Mastery to Appwrite
-      if (state.user) {
-        databases
-          .getDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_MASTERY_COLLECTION_ID,
-            `${state.user!.id}_${id}`,
-          )
-          .then(() => {
-            // Update existing
-            return databases.updateDocument(
-              APPWRITE_DB_ID,
-              APPWRITE_MASTERY_COLLECTION_ID,
-              `${state.user!.id}_${id}`,
-              {
-                currentLevel: updatedMastery.currentLevel,
-                bestAccuracy: updatedMastery.bestAccuracy,
-                bestTime: updatedMastery.bestTime,
-                status: updatedMastery.status,
-                lastPracticed: updatedMastery.lastPracticed,
-              },
-            );
-          })
-          .catch((e) => {
-            // Document might not exist, create it
-            if (e.code === 404) {
-              return databases.createDocument(
-                APPWRITE_DB_ID,
-                APPWRITE_MASTERY_COLLECTION_ID,
-                `${state.user!.id}_${id}`, // Predictable composite ID
-                {
-                  userId: state.user!.id,
-                  referenceId: id,
-                  passageReference: updatedMastery.passage.reference,
-                  passageText: updatedMastery.passage.text,
-                  currentLevel: updatedMastery.currentLevel,
-                  bestAccuracy: updatedMastery.bestAccuracy,
-                  bestTime: updatedMastery.bestTime,
-                  status: updatedMastery.status,
-                  lastPracticed: updatedMastery.lastPracticed,
-                },
-              );
-            }
-            console.error("Failed to sync mastery to Appwrite", e);
-          });
-
-        // Also update User profile points for Mastery
-        const earnedPoints = Math.round(accuracy);
-        databases
-          .updateDocument(
-            APPWRITE_DB_ID,
-            APPWRITE_USERS_COLLECTION_ID,
-            state.user.id,
-            {
-              totalScore: state.user.totalScore + earnedPoints,
-              masteryTotal: (state.user.masteryTotal || 0) + earnedPoints,
-            },
-          )
-          .catch((e) =>
-            console.error("Failed to update user mastery points:", e),
-          );
-      }
+      // Sync Mastery to Appwrite - REMOVED (Handled in useMastery hook for Convex)
 
       return {
         ...state,
@@ -416,7 +286,7 @@ export function appReducer(state: AppState, action: Action): AppState {
     case "LOAD_STATE":
       return { ...state, ...action.payload, isLoading: false };
 
-    case "INITIALIZE_APPWRITE_USER":
+    case "INITIALIZE_USER":
       return { ...state, user: action.payload, isLoading: false };
 
     default:

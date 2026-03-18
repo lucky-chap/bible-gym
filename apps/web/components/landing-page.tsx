@@ -169,7 +169,7 @@ export function LandingPage() {
             Used And Loved By
           </h2>
           <p className="text-white/80 text-lg text-center mb-12 max-w-xl mx-auto">
-            Bible Gym is trusted by believers everywhere to build consistent
+            Word Mastery is trusted by believers everywhere to build consistent
             Scripture study habits.
           </p>
 
@@ -265,8 +265,8 @@ export function LandingPage() {
             Works For Every Believer
           </h2>
           <p className="text-muted-foreground text-lg text-center mb-12 max-w-xl mx-auto">
-            Whether you&apos;re a new believer or a seasoned student, Bible Gym
-            adapts to your level.
+            Whether you&apos;re a new believer or a seasoned student, Word
+            Mastery adapts to your level.
           </p>
 
           <div className="flex flex-wrap justify-center gap-3">
@@ -304,7 +304,7 @@ export function LandingPage() {
             Ready To Start Your Training?
           </h2>
           <p className="text-white/80 text-lg mb-10 max-w-xl mx-auto">
-            Join Bible Gym and build a consistent Scripture study habit. Your
+            Join Word Mastery and build a consistent Scripture study habit. Your
             daily workout is waiting.
           </p>
           <button

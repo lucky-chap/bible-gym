@@ -1,5 +1,4 @@
 import { GoogleGenAI } from "@google/genai";
-import { Client, Databases, Query, ID } from "node-appwrite";
 import {
   Workout,
   BiblePassage,
@@ -7,28 +6,10 @@ import {
   ContextQuestionItem,
 } from "./types";
 import { generateDailyWorkout as generateFallbackWorkout } from "./workout-generator";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../convex/_generated/api";
 
-function getDbConfig() {
-  return {
-    databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-    collectionId:
-      process.env.NEXT_PUBLIC_APPWRITE_DAILY_WORKOUT_COLLECTION_ID ||
-      "daily_workouts",
-  };
-}
-
-let _databases: Databases | null = null;
-
-function getDatabases() {
-  if (!_databases) {
-    const client = new Client()
-      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-      .setKey(process.env.APPWRITE_API_KEY!);
-    _databases = new Databases(client);
-  }
-  return _databases;
-}
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 const HARDCODED_THEMES = [
   {
@@ -188,7 +169,7 @@ async function tryGenerateAIWorkout(
   const theme = themes[Math.floor(Math.random() * themes.length)];
 
   const prompt = `
-    You are an expert Bible teacher creating a "Spiritual Workout" for a web app called Bible Gym.
+    You are an expert Bible teacher creating a "Spiritual Workout" for a web app called Word Mastery.
     Target Date: ${date}.
     Theme: "${theme}".
 
@@ -309,21 +290,15 @@ export async function getOrCreateDailyWorkout(
 ): Promise<Workout> {
   const date = dateStr || new Date().toISOString().split("T")[0];
   const { isBackup = false, maxRetries = 0, retryIntervalMs = 60000 } = options;
-  const { databaseId, collectionId } = getDbConfig();
 
   try {
-    const existing = await getDatabases().listDocuments(
-      databaseId,
-      collectionId,
-      [Query.equal("date", date), Query.limit(1)],
-    );
-
-    let existingDoc =
-      existing.documents.length > 0 ? existing.documents[0] : null;
+    const existing = await convex.query(api.daily_workouts.getDailyWorkout, {
+      date,
+    });
 
     // 1. If we already have an AI-generated workout, return it.
-    if (existingDoc && existingDoc.isAiGenerated) {
-      return JSON.parse(existingDoc.workoutData) as Workout;
+    if (existing && existing.isAiGenerated) {
+      return JSON.parse(existing.workoutData) as Workout;
     }
 
     // 2. Try Gemini with retry loop
@@ -335,58 +310,33 @@ export async function getOrCreateDailyWorkout(
       try {
         const { workout, theme } = await tryGenerateAIWorkout(date);
 
-        if (existingDoc) {
-          await getDatabases().updateDocument(
-            databaseId,
-            collectionId,
-            existingDoc.$id,
-            {
-              workoutData: JSON.stringify(workout),
-              isAiGenerated: true,
-              isBackup: isBackup,
-              theme: theme,
-            },
-          );
-        } else {
-          await getDatabases().createDocument(
-            databaseId,
-            collectionId,
-            ID.unique(),
-            {
-              date,
-              workoutData: JSON.stringify(workout),
-              isAiGenerated: true,
-              isBackup: isBackup,
-              theme: theme,
-            },
-          );
-        }
+        await convex.mutation(api.daily_workouts.saveDailyWorkout, {
+          date,
+          workoutData: JSON.stringify(workout),
+          isAiGenerated: true,
+          isBackup: isBackup,
+          theme: theme,
+        });
+
         return workout;
       } catch (aiError) {
         console.warn(`Gemini attempt ${attempt + 1} failed for ${date}.`);
 
         // If this was the first/only attempt and we have a fallback or need one immediately:
         if (attempt === 0) {
-          // If we're not in a background/cron retry mode (maxRetries > 0),
-          // or if we just want to return a result immediately on first failure:
           if (maxRetries === 0) {
-            if (existingDoc) {
-              return JSON.parse(existingDoc.workoutData) as Workout;
+            if (existing) {
+              return JSON.parse(existing.workoutData) as Workout;
             }
             const { workout: hcWorkout, theme: hcTheme } =
               generateHardcodedWorkoutData(date);
-            await getDatabases().createDocument(
-              databaseId,
-              collectionId,
-              ID.unique(),
-              {
-                date,
-                workoutData: JSON.stringify(hcWorkout),
-                isAiGenerated: false,
-                isBackup: isBackup,
-                theme: hcTheme,
-              },
-            );
+            await convex.mutation(api.daily_workouts.saveDailyWorkout, {
+              date,
+              workoutData: JSON.stringify(hcWorkout),
+              isAiGenerated: false,
+              isBackup: isBackup,
+              theme: hcTheme,
+            });
             return hcWorkout;
           }
         }
@@ -399,12 +349,12 @@ export async function getOrCreateDailyWorkout(
     }
 
     // 3. All AI attempts failed. If we haven't returned yet, return hardcoded.
-    if (existingDoc) {
-      return JSON.parse(existingDoc.workoutData) as Workout;
+    if (existing) {
+      return JSON.parse(existing.workoutData) as Workout;
     }
     const { workout: hcWorkout, theme: hcTheme } =
       generateHardcodedWorkoutData(date);
-    await getDatabases().createDocument(databaseId, collectionId, ID.unique(), {
+    await convex.mutation(api.daily_workouts.saveDailyWorkout, {
       date,
       workoutData: JSON.stringify(hcWorkout),
       isAiGenerated: false,

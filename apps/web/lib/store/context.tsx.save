@@ -1,4 +1,4 @@
-"use client";
+OO"use client";
 
 import {
   createContext,
@@ -12,9 +12,11 @@ import React from "react";
 import { AppState, Action, initialState } from "./types";
 import { appReducer } from "./reducer";
 import { User } from "../types";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { Id } from "../../convex/_generated/dataModel";
+import { ConvexClientProvider } from "@/components/providers/convex-provider";
 
 const AppStateContext = createContext<AppState>(initialState);
 const AppDispatchContext = createContext<Dispatch<Action>>(() => {});
@@ -30,13 +32,12 @@ export function useAppDispatch() {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-
   const convexUser = useQuery(api.users.getMe);
   const updateUser = useMutation(api.users.updateProfile);
 
   // Initial local state load
   useEffect(() => {
-    const saved = localStorage.getItem("word-mastery-state");
+    const saved = localStorage.getItem("bible-gym-state");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -110,7 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         masteryStats: state.masteryStats,
         returnView: state.returnView,
       };
-      localStorage.setItem("word-mastery-state", JSON.stringify(stateToSave));
+      localStorage.setItem("bible-gym-state", JSON.stringify(stateToSave));
     }
   }, [
     state.user,
@@ -127,10 +128,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ]);
 
   return (
-    <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
-    </AppStateContext.Provider>
+    <ConvexClientProvider>
+      <AppStateContext.Provider value={state}>
+        <AppDispatchContext.Provider value={dispatch}>
+          {children}
+        </AppDispatchContext.Provider>
+      </AppStateContext.Provider>
+    </ConvexClientProvider>
   );
 }
