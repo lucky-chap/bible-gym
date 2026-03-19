@@ -66,7 +66,6 @@ export function MemorizationDrill({
   };
 
   useEffect(() => {
-    // Auto-focus first blank
     const firstBlank = currentQuestion.blankedWords[0];
     if (firstBlank && inputRefs.current[firstBlank.index] && !submitted) {
       inputRefs.current[firstBlank.index]?.focus();
@@ -81,7 +80,7 @@ export function MemorizationDrill({
       onShowResults?.();
     } else {
       setCurrentQuestionIndex((prev) => prev + 1);
-      inputRefs.current = {}; // reset refs for next question
+      inputRefs.current = {};
     }
   };
 
@@ -91,7 +90,6 @@ export function MemorizationDrill({
   ) => {
     if (e.key === "Tab" || e.key === "Enter") {
       e.preventDefault();
-      // Find next blank input
       const currentPos = currentQuestion.blankedWords.findIndex(
         (b) => b.index === currentIndex,
       );
@@ -131,51 +129,51 @@ export function MemorizationDrill({
 
   if (submitted) {
     return (
-      <div className="space-y-8 animate-in fade-in">
+      <div className="space-y-6 animate-forge-in">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-2xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+            className="w-11 h-11 rounded-xl bg-[var(--color-memorization)] border-2 border-foreground flex items-center justify-center"
+            style={{ boxShadow: "var(--shadow-brutal-sm)" }}
           >
-            <BookOpen className="w-6 h-6 text-white" />
+            <BookOpen className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">
+            <h2 className="text-base font-black text-foreground tracking-tight">
               Memorization Results
             </h2>
           </div>
         </div>
 
         <div
-          className="rounded-2xl bg-card border-2 border-foreground p-6 text-center"
-          style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+          className="rounded-xl bg-card border-2 border-foreground p-6 text-center"
+          style={{ boxShadow: "var(--shadow-brutal)" }}
         >
           <div className="flex items-center justify-center gap-2 mb-2">
             {score >= 70 ? (
-              <CheckCircle2 className="w-8 h-8 text-[#10B981]" />
+              <CheckCircle2 className="w-7 h-7 text-[var(--color-verse-match)]" />
             ) : (
-              <XCircle className="w-8 h-8 text-[#F59E0B]" />
+              <XCircle className="w-7 h-7 text-[var(--color-context)]" />
             )}
-            <span className="text-4xl font-black text-foreground">
+            <span className="text-4xl font-black text-foreground score-display">
               {score}/100
             </span>
           </div>
-          <p className="text-muted-foreground text-sm mt-2 font-medium">
+          <p className="text-muted-foreground text-xs mt-2 font-bold">
             {score === 100
               ? "Perfect! You know this passage by heart!"
               : "Keep training — you'll get stronger!"}
           </p>
         </div>
 
-        {/* Show a recap of mistakes if any */}
-        <div className="space-y-4">
+        {/* Recap */}
+        <div className="space-y-3">
           {drill.questions.map((q) => (
             <div
               key={q.id}
-              className="p-4 rounded-xl bg-card border-2 border-foreground"
-              style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+              className="p-4 rounded-xl bg-card border-2 border-foreground bg-lined"
+              style={{ boxShadow: "var(--shadow-brutal-sm)" }}
             >
-              <div className="text-xs text-primary font-black mb-2">
+              <div className="text-[10px] text-primary font-black mb-2 uppercase tracking-widest verse-ref">
                 {q.passage.reference}
               </div>
               <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 text-sm leading-relaxed">
@@ -187,10 +185,10 @@ export function MemorizationDrill({
                     return (
                       <span
                         key={i}
-                        className={`inline-block px-1.5 py-0.5 rounded font-bold ${
+                        className={`inline-block px-1.5 py-0.5 rounded-md font-bold text-xs ${
                           correct
-                            ? "text-[#10B981] bg-[#D1FAE5]"
-                            : "text-red-500 bg-red-50"
+                            ? "text-[var(--color-verse-match)] bg-[#D6F5E5]"
+                            : "text-destructive bg-red-50"
                         }`}
                       >
                         {correct ? (
@@ -199,7 +197,7 @@ export function MemorizationDrill({
                           <s>{answers[q.id]?.[i] || "___"}</s>
                         )}
                         {!correct && (
-                          <span className="ml-1 text-[#10B981]">
+                          <span className="ml-1 text-[var(--color-verse-match)]">
                             {expected}
                           </span>
                         )}
@@ -217,20 +215,18 @@ export function MemorizationDrill({
           ))}
         </div>
 
-        <div className="flex gap-4 w-full">
+        <div className="flex gap-3 w-full">
           {isPractice && onExit && (
             <button
               onClick={onExit}
-              className="w-full py-4 rounded-full bg-card text-foreground font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+              className="w-full py-3.5 rounded-xl bg-card text-foreground font-black text-sm border-2 border-foreground btn-brutal"
             >
               Go Back
             </button>
           )}
           <button
             onClick={() => onComplete(score)}
-            className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-            style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+            className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-black text-sm border-2 border-foreground btn-brutal uppercase tracking-wide"
           >
             {isPractice ? "Play Again →" : "Next Drill →"}
           </button>
@@ -241,30 +237,30 @@ export function MemorizationDrill({
 
   return (
     <div
-      className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300"
+      className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
       key={currentQuestionIndex}
     >
       {/* Drill header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-2xl bg-[#3B82F6] border-2 border-foreground flex items-center justify-center"
-            style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+            className="w-11 h-11 rounded-xl bg-[var(--color-memorization)] border-2 border-foreground flex items-center justify-center"
+            style={{ boxShadow: "var(--shadow-brutal-sm)" }}
           >
-            <BookOpen className="w-6 h-6 text-white" />
+            <BookOpen className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 className="text-base font-black text-foreground tracking-tight">
                 Memorization Drill
               </h2>
               {isAiGenerated && (
-                <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-[var(--color-mastery)]/10 text-[var(--color-mastery)] border border-[var(--color-mastery)]/30 tracking-widest">
                   <Sparkles className="w-2.5 h-2.5" /> AI
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground font-medium">
+            <p className="text-xs text-muted-foreground font-bold">
               Passage {currentQuestionIndex + 1} of {drill.questions.length}
             </p>
           </div>
@@ -273,13 +269,13 @@ export function MemorizationDrill({
 
       {/* Passage with blanks */}
       <div
-        className="rounded-2xl bg-card border-2 border-foreground p-6 md:p-8"
-        style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+        className="rounded-xl bg-card border-2 border-foreground p-6 md:p-7 bg-lined"
+        style={{ boxShadow: "var(--shadow-brutal)" }}
       >
-        <div className="text-sm font-black text-primary mb-4">
+        <div className="text-[10px] font-black text-primary mb-4 uppercase tracking-widest verse-ref">
           {currentQuestion.passage.reference}
         </div>
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-3 text-lg leading-relaxed">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-3 text-base leading-relaxed">
           {words.map((word, i) => {
             if (blankedIndices.has(i)) {
               const currentQAnswers = answers[currentQuestion.id] || {};
@@ -293,7 +289,7 @@ export function MemorizationDrill({
                     value={currentQAnswers[i] || ""}
                     onChange={(e) => updateAnswer(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, i)}
-                    className="w-28 md:w-32 px-3 py-1.5 rounded-lg text-base font-bold text-center transition-all bg-background border-2 border-foreground text-foreground focus:ring-2 focus:ring-primary outline-none"
+                    className="w-28 md:w-32 px-3 py-1.5 rounded-lg text-sm font-bold text-center transition-all bg-background border-2 border-foreground text-foreground focus:ring-2 focus:ring-primary outline-none"
                     placeholder={
                       method === "first-letter" ? formatWord(word) : "___"
                     }
@@ -302,7 +298,7 @@ export function MemorizationDrill({
               );
             }
             return (
-              <span key={i} className="text-foreground">
+              <span key={i} className="text-foreground font-medium">
                 {formatWord(word)}
               </span>
             );
@@ -312,11 +308,10 @@ export function MemorizationDrill({
 
       <button
         onClick={handleNextOrSubmit}
-        className="w-full py-4 rounded-full bg-[#3B82F6] text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 flex items-center justify-center gap-2"
-        style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+        className="w-full py-3.5 rounded-xl bg-[var(--color-memorization)] text-white font-black text-sm border-2 border-foreground btn-brutal flex items-center justify-center gap-2 uppercase tracking-wide"
       >
         {isFinalQuestion ? "Check Answers" : "Next Passage"}
-        {!isFinalQuestion && <ArrowRight className="w-5 h-5" />}
+        {!isFinalQuestion && <ArrowRight className="w-4 h-4" />}
       </button>
     </div>
   );

@@ -1,9 +1,10 @@
 "use client";
 
 import { useAppState, useAppDispatch } from "@/lib/store";
-import { Dumbbell, Users, LogOut, ArrowLeft } from "lucide-react";
+import { Users, BookOpen, ArrowLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
+import { UserButton, SignInButton, SignUpButton, Show } from "@clerk/nextjs";
 
 export function SharedLayout({ children }: { children: React.ReactNode }) {
   const { isLoading } = useAppState();
@@ -14,15 +15,26 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-5">
           <div
-            className="w-16 h-16 rounded-2xl bg-primary border-2 border-foreground flex items-center justify-center mx-auto animate-pulse"
-            style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+            className="w-16 h-16 rounded-2xl bg-primary border-2 border-foreground flex items-center justify-center mx-auto animate-stamp"
+            style={{ boxShadow: "var(--shadow-brutal-lg)" }}
           >
-            <Dumbbell className="w-8 h-8 text-white" />
+            <BookOpen className="w-8 h-8 text-primary-foreground" />
           </div>
-          <div className="text-sm text-muted-foreground font-bold">
-            Loading...
+          <div className="space-y-1">
+            <div className="text-sm font-black text-foreground uppercase tracking-widest">
+              Word Mastery
+            </div>
+            <div className="text-xs text-muted-foreground font-bold">
+              Preparing your training...
+            </div>
+          </div>
+          <div className="w-32 h-1.5 mx-auto rounded-full bg-secondary border border-foreground/10 overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full animate-pulse"
+              style={{ width: "60%" }}
+            />
           </div>
         </div>
       </div>
@@ -30,7 +42,6 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
   }
 
   const renderHeader = () => {
-    // Workout and Practice flows keep their specialized headers in their components
     if (
       pathname === "/workout" ||
       pathname === "/practice" ||
@@ -41,8 +52,8 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <header className="sticky top-0 z-50 bg-background border-b-2 border-foreground">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b-2 border-foreground">
+        <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           {pathname === "/group" ? (
             <button
               onClick={() => router.push("/dashboard")}
@@ -52,67 +63,67 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
               Dashboard
             </button>
           ) : (
-            <div className="flex items-center gap-2.5">
+            <button
+              onClick={() =>
+                router.push(pathname === "/dashboard" ? "/dashboard" : "/")
+              }
+              className="flex items-center gap-2.5 group"
+            >
               <div
-                className="w-10 h-10 rounded-xl bg-primary border-2 border-foreground flex items-center justify-center"
-                style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                className="w-9 h-9 rounded-lg bg-primary border-2 border-foreground flex items-center justify-center group-hover:translate-y-[-1px] transition-transform"
+                style={{ boxShadow: "var(--shadow-brutal-sm)" }}
               >
-                <Dumbbell className="w-5 h-5 text-white" />
+                <BookOpen className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-extrabold text-foreground tracking-tight">
-                Word Mastery
-              </span>
-            </div>
+              <div className="flex flex-col items-start">
+                <span className="text-base font-black text-foreground tracking-tight leading-none">
+                  Word Mastery
+                </span>
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.15em] leading-none mt-0.5">
+                  Scripture Forge
+                </span>
+              </div>
+            </button>
           )}
 
           {pathname === "/group" && (
-            <h1 className="text-lg font-black text-foreground">
+            <h1 className="text-base font-black text-foreground uppercase tracking-wide">
               Training Groups
             </h1>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {pathname === "/" && (
-              <>
-                <button
-                  onClick={() => router.push("/auth")}
-                  className="px-5 py-2.5 rounded-full bg-background text-foreground text-sm font-bold border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => router.push("/auth")}
-                  className="px-5 py-2.5 rounded-full bg-primary text-white text-sm font-bold border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                  style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
-                >
-                  Start Training
-                </button>
-              </>
+              <Show when="signed-out">
+                <div className="flex items-center gap-2.5">
+                  <SignInButton mode="modal">
+                    <button className="px-4 py-2 rounded-lg bg-background text-foreground text-sm font-bold border-2 border-foreground btn-brutal">
+                      Sign In
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold border-2 border-foreground btn-brutal">
+                      Start Training
+                    </button>
+                  </SignUpButton>
+                </div>
+              </Show>
             )}
 
-            {pathname === "/dashboard" && (
-              <>
-                <button
-                  onClick={() => router.push("/group")}
-                  className="w-10 h-10 rounded-xl bg-card border-2 border-foreground flex items-center justify-center text-foreground hover:bg-primary hover:text-white transition-all"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                >
-                  <Users className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => {
-                    dispatch({ type: "LOGOUT" });
-                    localStorage.removeItem("bible-gym-state");
-                    router.push("/");
-                  }}
-                  className="w-10 h-10 rounded-xl bg-card border-2 border-foreground flex items-center justify-center text-muted-foreground hover:bg-red-500 hover:text-white hover:border-red-700 transition-all"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </>
-            )}
+            <Show when="signed-in">
+              <div className="flex items-center gap-3">
+                {pathname === "/dashboard" && (
+                  <button
+                    onClick={() => router.push("/group")}
+                    className="w-9 h-9 rounded-lg bg-card border-2 border-foreground flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+                    style={{ boxShadow: "var(--shadow-brutal-sm)" }}
+                  >
+                    <Users className="w-5 h-5" />
+                  </button>
+                )}
+                <UserButton />
+              </div>
+            </Show>
 
             {pathname === "/group" && <div className="w-20" />}
           </div>
@@ -125,16 +136,18 @@ export function SharedLayout({ children }: { children: React.ReactNode }) {
     if (!["/", "/dashboard", "/group"].includes(pathname)) return null;
 
     return (
-      <footer className="bg-foreground py-10 border-t-2 border-foreground mt-auto">
+      <footer className="bg-iron py-8 border-t-2 border-foreground mt-auto">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary border-2 border-white/20 flex items-center justify-center">
-              <Dumbbell className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-primary border border-primary-foreground/20 flex items-center justify-center">
+              <BookOpen className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-            <span className="text-sm font-bold text-white">Word Mastery</span>
+            <span className="text-sm font-black text-primary-foreground tracking-tight">
+              Word Mastery
+            </span>
           </div>
-          <p className="text-xs text-gray-400">
-            Train your spirit. Grow your faith.
+          <p className="text-[11px] text-primary-foreground/40 font-bold uppercase tracking-wider">
+            Train your spirit · Grow your faith
           </p>
         </div>
       </footer>

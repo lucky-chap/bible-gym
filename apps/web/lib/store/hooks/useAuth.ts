@@ -1,23 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useAppState, useAppDispatch } from "@/lib/store/context";
+import { useRouter } from "next/navigation";
 
 export function useAuth() {
+  const { user: clerkUser, isLoaded } = useUser();
+  const { signOut, openSignIn } = useClerk();
   const state = useAppState();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { signIn, signOut } = useAuthActions();
 
   const login = async () => {
-    try {
-      await signIn("google", {
-        redirectTo: "/dashboard",
-      });
-    } catch (error) {
-      console.error("Google login failed", error);
-    }
+    openSignIn({ forceRedirectUrl: "/dashboard" });
   };
 
   const logout = async () => {
@@ -34,5 +29,12 @@ export function useAuth() {
     }
   };
 
-  return { user: state.user, login, logout, isAuthenticated: !!state.user };
+  return {
+    user: state.user,
+    clerkUser,
+    isLoaded,
+    login,
+    logout,
+    isAuthenticated: !!clerkUser,
+  };
 }

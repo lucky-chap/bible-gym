@@ -17,15 +17,15 @@ function SortableItem({ item, isSubmitted, isCorrect }: SortableItemProps) {
       value={item}
       id={item.id}
       dragListener={!isSubmitted}
-      className={`relative group flex items-start gap-4 p-5 border-2 rounded-2xl bg-card ${
+      className={`relative group flex items-start gap-3 p-4 border-2 rounded-xl bg-card ${
         isSubmitted
           ? isCorrect
-            ? "border-[#10B981] bg-[#D1FAE5]"
-            : "border-red-500 bg-red-50"
+            ? "border-foreground bg-[#D6F5E5]"
+            : "border-destructive bg-red-50"
           : "border-foreground"
       } ${!isSubmitted ? "cursor-grab active:cursor-grabbing hover:bg-muted/30" : ""}`}
       style={{
-        boxShadow: !isSubmitted ? "2px 2px 0px 0px var(--foreground)" : "none",
+        boxShadow: !isSubmitted ? "var(--shadow-brutal-press)" : "none",
       }}
       whileDrag={{
         scale: 1.02,
@@ -36,15 +36,15 @@ function SortableItem({ item, isSubmitted, isCorrect }: SortableItemProps) {
       }}
     >
       <div
-        className={`mt-1 p-1 rounded-lg shrink-0 transition-colors ${
+        className={`mt-0.5 p-1 rounded-md shrink-0 transition-colors ${
           isSubmitted
             ? "opacity-0"
             : "text-muted-foreground group-hover:text-primary"
         }`}
       >
-        <GripVertical className="w-5 h-5" />
+        <GripVertical className="w-4 h-4" />
       </div>
-      <p className="font-bold text-foreground leading-relaxed select-none">
+      <p className="font-bold text-foreground leading-relaxed select-none text-sm">
         {item.text}
       </p>
     </Reorder.Item>
@@ -87,32 +87,35 @@ export function RearrangeDrillComponent({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-4">
+    <div className="w-full max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-black text-foreground">Rearrange</h2>
+            <h2 className="text-2xl font-black text-foreground tracking-tight">Rearrange</h2>
             {isAiGenerated && (
-              <span className="flex items-center gap-1 px-2 py-0.5 mt-1 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+              <span className="flex items-center gap-1 px-2 py-0.5 mt-1 text-[9px] font-black uppercase rounded-md bg-purple-100 text-purple-700 border border-purple-200 tracking-widest">
                 <Sparkles className="w-2.5 h-2.5" /> AI
               </span>
             )}
           </div>
-          <div className="px-4 py-1.5 rounded-full bg-primary/10 border-2 border-primary text-primary font-black text-xs uppercase shadow-[2px_2px_0px_0px_var(--foreground)]">
+          <div
+            className="px-3 py-1.5 rounded-md bg-primary/10 border-2 border-primary text-primary font-black text-[10px] uppercase tracking-widest verse-ref"
+            style={{ boxShadow: "var(--shadow-brutal-press)" }}
+          >
             {drill.passage.reference}
           </div>
         </div>
-        <p className="text-muted-foreground font-medium text-lg">
+        <p className="text-muted-foreground font-medium text-sm">
           Drag the verses into their correct chronological order.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Reorder.Group
           axis="y"
           values={items}
           onReorder={setItems}
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-3"
         >
           {items.map((item, index) => (
             <SortableItem
@@ -125,7 +128,7 @@ export function RearrangeDrillComponent({
         </Reorder.Group>
       </div>
 
-      <div className="flex justify-center pt-8">
+      <div className="flex justify-center pt-6">
         <AnimatePresence mode="wait">
           {isSubmitted ? (
             <motion.div
@@ -134,13 +137,16 @@ export function RearrangeDrillComponent({
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-4 w-full text-center"
             >
-              <div className="rounded-2xl bg-card border-2 border-foreground p-6 shadow-[4px_4px_0px_0px_var(--foreground)]">
+              <div
+                className="rounded-xl bg-card border-2 border-foreground p-6"
+                style={{ boxShadow: "var(--shadow-brutal)" }}
+              >
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl font-black text-foreground">
+                  <span className="text-2xl font-black text-foreground score-display">
                     {score}/100
                   </span>
                 </div>
-                <p className="text-muted-foreground text-sm font-medium">
+                <p className="text-muted-foreground text-xs font-bold">
                   {score === 100
                     ? "Perfect sequence! Your context recall is impeccable."
                     : score >= 50
@@ -149,13 +155,13 @@ export function RearrangeDrillComponent({
                 </p>
               </div>
 
-              <div className="flex gap-4 w-full">
+              <div className="flex gap-3 w-full">
                 {isPractice && onExit && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onExit}
-                    className="w-full py-4 rounded-full bg-card text-foreground font-bold text-base border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)]"
+                    className="w-full py-3.5 rounded-xl bg-card text-foreground font-black text-sm border-2 border-foreground btn-brutal"
                   >
                     Go Back
                   </motion.button>
@@ -164,7 +170,7 @@ export function RearrangeDrillComponent({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => onComplete(score, items)}
-                  className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground shadow-[4px_4px_0px_0px_var(--foreground)]"
+                  className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-black text-sm border-2 border-foreground btn-brutal uppercase tracking-wide"
                 >
                   {isPractice ? "Play Again →" : "Complete Drill →"}
                 </motion.button>
@@ -179,10 +185,11 @@ export function RearrangeDrillComponent({
               whileHover={{ y: -4 }}
               whileTap={{ y: 0 }}
               onClick={handleSubmit}
-              className="group relative px-10 py-4 bg-primary text-white font-black text-xl rounded-2xl border-2 border-foreground shadow-[0px_8px_0px_0px_var(--foreground)]"
+              className="group relative px-10 py-3.5 bg-primary text-primary-foreground font-black text-base rounded-xl border-2 border-foreground uppercase tracking-wide"
+              style={{ boxShadow: "0px 6px 0px 0px var(--foreground)" }}
             >
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5" />
                 Check Sequence
               </div>
             </motion.button>

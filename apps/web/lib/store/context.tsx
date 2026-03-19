@@ -12,9 +12,9 @@ import React from "react";
 import { AppState, Action, initialState } from "./types";
 import { appReducer } from "./reducer";
 import { User } from "../types";
-import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth, useUser } from "@clerk/nextjs";
 
 const AppStateContext = createContext<AppState>(initialState);
 const AppDispatchContext = createContext<Dispatch<Action>>(() => {});
@@ -29,7 +29,8 @@ export function useAppDispatch() {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const { isSignedIn, isLoaded: isAuthLoaded } = useAuth();
+  const { user: clerkUser } = useUser();
 
   const convexUser = useQuery(api.users.getMe);
   const updateUser = useMutation(api.users.updateProfile);
@@ -60,41 +61,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Sync Convex user to App State
+  // Sync Clerk/Convex user to App State
   useEffect(() => {
-    if (isAuthenticated && convexUser) {
+    if (isSignedIn && isAuthLoaded && clerkUser) {
+      // Prioritize Convex user if available, otherwise use Clerk info
       const user: User = {
-        id: convexUser._id as string,
-        name: convexUser.name || "User",
-        email: convexUser.email || "",
-        avatarInitials: (convexUser.name || "U")
+        id: (convexUser?._id as string) || clerkUser.id,
+        name: convexUser?.name || clerkUser.fullName || "User",
+        email:
+          convexUser?.email ||
+          clerkUser.primaryEmailAddress?.emailAddress ||
+          "",
+        avatarInitials: (convexUser?.name || clerkUser.fullName || "U")
           .split(" ")
           .map((n: string) => n[0])
           .join("")
           .toUpperCase()
           .slice(0, 2),
-        streak: convexUser.streak || 0,
-        totalScore: convexUser.totalScore || 0,
-        weeklyScore: convexUser.weeklyScore || 0,
-        lastWeeklyReset: convexUser.lastWeeklyReset || null,
-        lastWorkoutDate: convexUser.lastWorkoutDate || null,
-        groupId: convexUser.groupId || null,
-        createdAt: new Date(convexUser._creationTime).toISOString(),
-        memorizationTotal: convexUser.memorizationTotal || 0,
-        contextTotal: convexUser.contextTotal || 0,
-        verseMatchTotal: convexUser.verseMatchTotal || 0,
-        rearrangeTotal: convexUser.rearrangeTotal || 0,
-        masteryTotal: convexUser.masteryTotal || 0,
-        masteryConsistency: convexUser.masteryConsistency || 0,
-        masteredCount: convexUser.masteredCount || 0,
+        streak: convexUser?.streak || 0,
+        totalScore: convexUser?.totalScore || 0,
+        weeklyScore: convexUser?.weeklyScore || 0,
+        lastWeeklyReset: convexUser?.lastWeeklyReset || null,
+        lastWorkoutDate: convexUser?.lastWorkoutDate || null,
+        groupId: convexUser?.groupId || null,
+        createdAt: convexUser
+          ? new Date(convexUser._creationTime).toISOString()
+          : new Date().toISOString(),
+        memorizationTotal: convexUser?.memorizationTotal || 0,
+        contextTotal: convexUser?.contextTotal || 0,
+        verseMatchTotal: convexUser?.verseMatchTotal || 0,
+        rearrangeTotal: convexUser?.rearrangeTotal || 0,
+        masteryTotal: convexUser?.masteryTotal || 0,
+        masteryConsistency: convexUser?.masteryConsistency || 0,
+        masteredCount: convexUser?.masteredCount || 0,
       };
 
       dispatch({ type: "INITIALIZE_USER", payload: user });
       dispatch({ type: "SET_LOADING", payload: false });
-    } else if (!isAuthLoading && !isAuthenticated) {
+    } else if (isAuthLoaded && !isSignedIn) {
       dispatch({ type: "SET_LOADING", payload: false });
     }
-  }, [isAuthenticated, isAuthLoading, convexUser]);
+  }, [isSignedIn, isAuthLoaded, clerkUser, convexUser]);
 
   // Persist state to local storage
   useEffect(() => {

@@ -48,65 +48,128 @@
 }
 
 :root {
-  /* Joyogram-inspired warm light palette */
-  --background: #fefaf4;
-  --foreground: #050505;
-  --card: #ffffff;
-  --card-foreground: #050505;
-  --popover: #ffffff;
-  --popover-foreground: #050505;
-  --primary: #e94d76;
-  --primary-foreground: #ffffff;
-  --secondary: #f0ebe3;
-  --secondary-foreground: #050505;
-  --muted: #f0ebe3;
-  --muted-foreground: #6b6560;
-  --accent: #050505;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --border: #050505;
-  --input: #f0ebe3;
-  --ring: #e94d76;
-  --chart-1: #e94d76;
-  --chart-2: #3b82f6;
-  --chart-3: #10b981;
-  --chart-4: #f59e0b;
-  --chart-5: #8b5cf6;
-  --radius: 1rem;
-  --sidebar: #fefaf4;
-  --sidebar-foreground: #050505;
-  --sidebar-primary: #e94d76;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0ebe3;
-  --sidebar-accent-foreground: #050505;
-  --sidebar-border: #050505;
-  --sidebar-ring: #e94d76;
+  /* ═══════════════════════════════════════════════
+     WORD MASTERY — "Scripture Forge" Design System
+     Parchment + Iron · Ink-stained Neo-Brutalism
+     ═══════════════════════════════════════════════ */
 
-  /* Neo-brutalist solid shadows - dynamic via foreground */
-  --shadow-brutal: 4px 4px 0px 0px var(--foreground);
-  --shadow-brutal-sm: 3px 3px 0px 0px var(--foreground);
-  --shadow-brutal-lg: 6px 6px 0px 0px var(--foreground);
+  /* Core palette: warm parchment ground, iron-dark foreground */
+  --background: #FAF6EE;
+  --foreground: #1A1714;
+  --card: #FFFDF8;
+  --card-foreground: #1A1714;
+  --popover: #FFFDF8;
+  --popover-foreground: #1A1714;
+
+  /* Primary: Crimson Ink — evokes red-letter Bible editions */
+  --primary: #C43B5C;
+  --primary-foreground: #FFFDF8;
+
+  /* Secondary: Aged linen */
+  --secondary: #EDE7DA;
+  --secondary-foreground: #1A1714;
+
+  /* Muted: Weathered parchment */
+  --muted: #EDE7DA;
+  --muted-foreground: #7A7168;
+
+  /* Accent: Deep iron */
+  --accent: #1A1714;
+  --accent-foreground: #FFFDF8;
+
+  /* Destructive */
+  --destructive: #D93636;
+
+  /* Borders: Heavy iron */
+  --border: #1A1714;
+  --input: #EDE7DA;
+  --ring: #C43B5C;
+
+  /* Drill-specific accent palette */
+  --chart-1: #C43B5C; /* Memorization — crimson ink */
+  --chart-2: #2D6A9F; /* Context — deep indigo blue */
+  --chart-3: #2A7D5F; /* Verse Match — forest scripture green */
+  --chart-4: #C47F2A; /* Rearrange — burnished gold */
+  --chart-5: #6B4FA0; /* Mastery — royal purple */
+
+  /* Drill colors as named tokens */
+  --color-memorization: #2D6A9F;
+  --color-context: #C47F2A;
+  --color-verse-match: #2A7D5F;
+  --color-rearrange: #9B4D8B;
+  --color-mastery: #6B4FA0;
+
+  --radius: 0.75rem;
+
+  /* Sidebar */
+  --sidebar: #FAF6EE;
+  --sidebar-foreground: #1A1714;
+  --sidebar-primary: #C43B5C;
+  --sidebar-primary-foreground: #FFFDF8;
+  --sidebar-accent: #EDE7DA;
+  --sidebar-accent-foreground: #1A1714;
+  --sidebar-border: #1A1714;
+  --sidebar-ring: #C43B5C;
+
+  /* ═══ NEO-BRUTALIST SHADOW SYSTEM ═══
+     "Forge-stamped" shadows with warm iron tone */
+  --shadow-brutal: 4px 4px 0px 0px #1A1714;
+  --shadow-brutal-sm: 3px 3px 0px 0px #1A1714;
+  --shadow-brutal-lg: 6px 6px 0px 0px #1A1714;
+  --shadow-brutal-xl: 8px 8px 0px 0px #1A1714;
+  --shadow-brutal-press: 2px 2px 0px 0px #1A1714;
   --shadow-brutal-pink: 4px 4px 0px 0px var(--primary);
+  --shadow-brutal-blue: 4px 4px 0px 0px var(--color-memorization);
+  --shadow-brutal-green: 4px 4px 0px 0px var(--color-verse-match);
+  --shadow-brutal-gold: 4px 4px 0px 0px var(--color-context);
+  --shadow-brutal-purple: 4px 4px 0px 0px var(--color-mastery);
+
+  /* ═══ TEXTURE PATTERNS ═══ */
+  --texture-dots: radial-gradient(circle, #1A171408 1px, transparent 1px);
+  --texture-dots-size: 16px 16px;
+  --texture-lines: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 23px,
+    #1A171406 23px,
+    #1A171406 24px
+  );
+  --texture-cross: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 19px,
+      #1A171405 19px,
+      #1A171405 20px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 19px,
+      #1A171405 19px,
+      #1A171405 20px
+    );
 }
 
+/* ═══════════════════════════════════════════════
+   BASE LAYER
+   ═══════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+    background-image: var(--texture-dots);
+    background-size: var(--texture-dots-size);
   }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
   }
 }
 
-/* Custom scrollbar */
+/* ═══════════════════════════════════════════════
+   CUSTOM SCROLLBAR — Subtle iron
+   ═══════════════════════════════════════════════ */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -114,18 +177,78 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1ccc4;
+  background: #C4BAA8;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa59c;
+  background: #9B917F;
 }
 
-/* Smooth animations */
-@keyframes fade-in {
+/* ═══════════════════════════════════════════════
+   ANIMATIONS — Purposeful, athletic motion
+   ═══════════════════════════════════════════════ */
+
+/* Entrance: slide up with subtle bounce */
+@keyframes forge-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Score counting pulse */
+@keyframes score-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Stamp effect — quick scale-in */
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.3) rotate(-2deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.97) rotate(0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Streak fire flicker */
+@keyframes fire-flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.05) rotate(-2deg); }
+  75% { transform: scale(1.02) rotate(1deg); }
+}
+
+/* Subtle breathing for active elements */
+@keyframes breathe {
+  0%, 100% { box-shadow: var(--shadow-brutal); }
+  50% { box-shadow: 5px 5px 0px 0px #1A1714; }
+}
+
+/* Progress bar fill */
+@keyframes fill-bar {
+  from { width: 0%; }
+}
+
+/* Slide in from bottom */
+@keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -133,11 +256,13 @@
   }
 }
 
-.animate-in {
-  animation: fade-in 0.5s ease-out forwards;
+/* Fade in */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Neo-brutalist hover transition for cards */
+/* Card hover lift */
 @keyframes card-hover-in {
   from {
     box-shadow: 4px 4px 0px 0px var(--foreground);
@@ -149,15 +274,168 @@
   }
 }
 
-/* Selection */
-::selection {
-  background-color: rgba(233, 77, 118, 0.25);
-  color: #050505;
+/* ═══ UTILITY CLASSES ═══ */
+
+.animate-in {
+  animation: fade-in 0.5s ease-out forwards;
 }
 
-/* Focus visible */
+.animate-forge-in {
+  animation: forge-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-stamp {
+  animation: stamp-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-score-pulse {
+  animation: score-pulse 0.6s ease-in-out;
+}
+
+.animate-fire {
+  animation: fire-flicker 2s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+/* Stagger delays for sequential elements */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* ═══════════════════════════════════════════════
+   COMPONENT PATTERNS
+   ═══════════════════════════════════════════════ */
+
+/* Brutalist card base — use with border-2 border-foreground */
+.card-brutal {
+  border: 2px solid var(--foreground);
+  box-shadow: var(--shadow-brutal);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-brutal:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-brutal-lg);
+}
+.card-brutal:active {
+  transform: translate(0, 0);
+  box-shadow: var(--shadow-brutal-press);
+}
+
+/* Button press effect */
+.btn-brutal {
+  border: 2px solid var(--foreground);
+  box-shadow: var(--shadow-brutal);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.btn-brutal:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-brutal-lg);
+}
+.btn-brutal:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+.btn-brutal:disabled {
+  box-shadow: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Verse reference badge styling */
+.verse-ref {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+}
+
+/* Score display — jersey number styling */
+.score-display {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Section divider — cross pattern */
+.divider-cross {
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--foreground) 0px,
+    var(--foreground) 8px,
+    transparent 8px,
+    transparent 12px
+  );
+  opacity: 0.15;
+}
+
+/* Parchment texture for special sections */
+.bg-parchment {
+  background-color: var(--card);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, #F5E6C840 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, #E8D5B840 0%, transparent 50%),
+    var(--texture-dots);
+  background-size: 100%, 100%, var(--texture-dots-size);
+}
+
+/* Iron-dark section background */
+.bg-iron {
+  background-color: var(--foreground);
+  background-image: radial-gradient(circle, #FFFDF805 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Lined paper effect for drill areas */
+.bg-lined {
+  background-image: var(--texture-lines);
+}
+
+/* Grid paper effect */
+.bg-grid {
+  background-image: var(--texture-cross);
+}
+
+/* SVG-based patterns (no gradients) */
+.pattern-ink-grid {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpath d='M0 35.5h36M35.5 0v36' stroke='%231A1714' stroke-width='1.25' stroke-opacity='0.22' shape-rendering='crispEdges'/%3E%3C/svg%3E");
+  background-size: 36px 36px;
+  background-repeat: repeat;
+}
+.pattern-ink-dots {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Ccircle cx='2.5' cy='2.5' r='2.5' fill='%231A1714' fill-opacity='0.12'/%3E%3C/svg%3E");
+  background-size: 18px 18px;
+  background-repeat: repeat;
+}
+.pattern-ink-brick {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='0.75' y='0.75' width='46.5' height='22.5' rx='3' ry='3' fill='none' stroke='%23FFFDF8' stroke-width='1.5' stroke-opacity='0.24'/%3E%3Crect x='8.75' y='24.75' width='30.5' height='22.5' rx='3' ry='3' fill='none' stroke='%23FFFDF8' stroke-width='1.5' stroke-opacity='0.16'/%3E%3C/svg%3E");
+  background-size: 48px 48px;
+  background-repeat: repeat;
+}
+
+/* ═══════════════════════════════════════════════
+   SELECTION & FOCUS
+   ═══════════════════════════════════════════════ */
+
+::selection {
+  background-color: rgba(196, 59, 92, 0.2);
+  color: #1A1714;
+}
+
 :focus-visible {
-  outline: 2px solid rgba(233, 77, 118, 0.5);
+  outline: 2px solid rgba(196, 59, 92, 0.5);
   outline-offset: 2px;
 }
 
@@ -169,3 +447,14 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--foreground);
   caret-color: var(--foreground);
 }
+
+/* ═══════════════════════════════════════════════
+   DRILL-SPECIFIC ACCENTS
+   Use these on drill containers for thematic color
+   ═══════════════════════════════════════════════ */
+
+.drill-memorization { --drill-color: var(--color-memorization); }
+.drill-context { --drill-color: var(--color-context); }
+.drill-verse-match { --drill-color: var(--color-verse-match); }
+.drill-rearrange { --drill-color: var(--color-rearrange); }
+.drill-mastery { --drill-color: var(--color-mastery); }

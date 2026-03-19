@@ -13,6 +13,7 @@
   "dependencies": {
     "@auth/core": "^0.37.0",
     "@base-ui/react": "^1.2.0",
+    "@clerk/nextjs": "^7.0.5",
     "@convex-dev/auth": "^0.0.91",
     "@google/genai": "^1.43.0",
     "appwrite": "^22.4.1",

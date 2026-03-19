@@ -5,7 +5,7 @@ import { MemorizationDrill } from "./drills/memorization-drill";
 import { ContextChallengeDrill } from "./drills/context-drill";
 import { VerseMatchDrill } from "./drills/verse-match-drill";
 import { RearrangeDrillComponent } from "./drills/rearrange-drill";
-import { ArrowLeft, Dumbbell, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
@@ -40,6 +40,13 @@ export function WorkoutFlow() {
     rearrange: "Rearrange",
   };
 
+  const drillColors: Record<string, string> = {
+    memorization: "var(--color-memorization)",
+    context: "var(--color-context)",
+    "verse-match": "var(--color-verse-match)",
+    rearrange: "var(--color-rearrange)",
+  };
+
   const _handleDrillComplete = async (score: number) => {
     if (currentDrillIndex === workout.drills.length - 1) {
       setIsSaving(true);
@@ -59,15 +66,20 @@ export function WorkoutFlow() {
   if (isSaving) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center space-y-6 px-6 bg-background">
-        <Loader2 className="w-16 h-16 text-primary animate-spin" />
+        <div
+          className="w-16 h-16 rounded-2xl bg-primary border-2 border-foreground flex items-center justify-center animate-stamp"
+          style={{ boxShadow: "var(--shadow-brutal-lg)" }}
+        >
+          <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
+        </div>
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-black text-foreground">
+          <h2 className="text-2xl font-black text-foreground tracking-tight">
             Mission Accomplished!
           </h2>
-          <p className="text-xl text-muted-foreground font-bold">
+          <p className="text-base text-muted-foreground font-bold">
             Saving your score to the database...
           </p>
-          <p className="text-[#EF4444] font-bold animate-pulse">
+          <p className="text-destructive font-bold text-sm animate-pulse">
             Please do not close this page.
           </p>
         </div>
@@ -78,8 +90,8 @@ export function WorkoutFlow() {
   return (
     <div className="h-full w-full">
       {/* Top Bar */}
-      <header className="sticky top-0 z-50 bg-background border-b-2 border-foreground">
-        <div className="max-w-3xl mx-auto px-6 py-4">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b-2 border-foreground">
+        <div className="max-w-3xl mx-auto px-6 py-3.5">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={exitWorkout}
@@ -89,28 +101,28 @@ export function WorkoutFlow() {
               Exit
             </button>
             <div className="flex items-center gap-2">
-              <Dumbbell className="w-4 h-4 text-primary" />
-              <span className="text-sm font-bold text-foreground">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <span className="text-xs font-black text-foreground uppercase tracking-wider">
                 Drill {currentDrillIndex + 1}/{workout.drills.length}
               </span>
             </div>
             <div className="flex items-center gap-3">
               <span
-                className="font-mono text-sm font-bold text-white bg-primary px-3 py-1 rounded-full border-2 border-foreground"
-                style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+                className="font-mono text-xs font-black text-primary-foreground bg-primary px-3 py-1 rounded-md border-2 border-foreground"
+                style={{ boxShadow: "var(--shadow-brutal-press)" }}
               >
                 {formatTime(secondsElapsed)}
               </span>
-              <span className="text-sm font-bold text-foreground hidden sm:inline">
+              <span className="text-xs font-bold text-muted-foreground hidden sm:inline">
                 {drillLabels[currentDrill.type]}
               </span>
             </div>
           </div>
 
           {/* Progress bar */}
-          <div className="h-3 rounded-full bg-muted border-2 border-foreground overflow-hidden">
+          <div className="h-2.5 rounded-md bg-muted border-2 border-foreground overflow-hidden">
             <div
-              className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+              className="h-full rounded-sm bg-primary transition-all duration-700 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>

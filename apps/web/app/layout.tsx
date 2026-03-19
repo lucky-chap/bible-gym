@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import { ClerkProvider } from "@clerk/nextjs";
 
 import { AppProvider } from "@/lib/store/context";
 import { SharedLayout } from "@/components/shared-layout";
@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ConvexAuthNextjsServerProvider>
+    <ClerkProvider>
       <html
         suppressHydrationWarning
         lang="en"
@@ -52,6 +52,6 @@ export default function RootLayout({
           </ConvexClientProvider>
         </body>
       </html>
-    </ConvexAuthNextjsServerProvider>
+    </ClerkProvider>
   );
 }

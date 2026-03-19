@@ -27,7 +27,6 @@ export function VerseMatchDrill({
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
 
-  // Shuffled text options
   const [shuffledTexts] = useState(() => {
     const texts = drill.pairs.map((p) => p.text);
     for (let i = texts.length - 1; i > 0; i--) {
@@ -48,13 +47,10 @@ export function VerseMatchDrill({
   const handleTextClick = useCallback(
     (text: string) => {
       if (submitted || !selectedRef) return;
-
-      // Check if this text is already matched to something else
       const existingRef = Object.entries(matches).find(
         ([, v]) => v === text,
       )?.[0];
       if (existingRef) {
-        // Remove old match
         const newMatches = { ...matches };
         delete newMatches[existingRef];
         newMatches[selectedRef] = text;
@@ -94,25 +90,25 @@ export function VerseMatchDrill({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Drill header */}
       <div className="flex items-center gap-3">
         <div
-          className="w-12 h-12 rounded-2xl bg-[#10B981] border-2 border-foreground flex items-center justify-center"
-          style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+          className="w-11 h-11 rounded-xl border-2 border-foreground flex items-center justify-center"
+          style={{ backgroundColor: "var(--color-verse-match)", boxShadow: "var(--shadow-brutal-sm)" }}
         >
-          <Zap className="w-6 h-6 text-white" />
+          <Zap className="w-5 h-5 text-white" />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-foreground">Verse Match</h2>
+            <h2 className="text-base font-black text-foreground tracking-tight">Verse Match</h2>
             {isAiGenerated && (
-              <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/30">
+              <span className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-purple-100 text-purple-700 border border-purple-200 tracking-widest">
                 <Sparkles className="w-2.5 h-2.5" /> AI
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground font-medium">
+          <p className="text-xs text-muted-foreground font-bold">
             Match each reference to its verse
           </p>
         </div>
@@ -120,20 +116,20 @@ export function VerseMatchDrill({
 
       {/* Instructions */}
       <div
-        className="rounded-xl bg-card border-2 border-foreground p-4"
-        style={{ boxShadow: "3px 3px 0px 0px #10B981" }}
+        className="rounded-lg bg-card border-2 border-foreground p-3.5"
+        style={{ boxShadow: "var(--shadow-brutal-green)" }}
       >
-        <p className="text-sm text-foreground font-medium">
-          <span className="text-[#10B981] font-black">How to play:</span> Tap a
-          reference on the left, then tap its matching verse text on the right.
+        <p className="text-xs text-foreground font-medium">
+          <span className="font-black" style={{ color: "var(--color-verse-match)" }}>How to play:</span>{" "}
+          Tap a reference on the left, then tap its matching verse text on the right.
         </p>
       </div>
 
       {/* Match Area */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         {/* References */}
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+        <div className="space-y-2.5">
+          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5 pl-1">
             References
           </div>
           {drill.pairs.map((pair) => {
@@ -145,43 +141,43 @@ export function VerseMatchDrill({
                 key={pair.reference}
                 onClick={() => handleRefClick(pair.reference)}
                 disabled={submitted}
-                className={`w-full p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
+                className={`w-full p-3.5 rounded-xl border-2 text-left transition-all duration-150 ${
                   submitted
                     ? correct
-                      ? "border-foreground bg-[#D1FAE5]"
+                      ? "border-foreground bg-[#D6F5E5]"
                       : "border-foreground bg-red-50"
                     : selectedRef === pair.reference
-                      ? "border-[#10B981] bg-[#10B981]/10"
+                      ? "border-foreground bg-[#D6F5E5]/50"
                       : matched
-                        ? "border-[#3B82F6] bg-[#3B82F6]/5"
-                        : "border-foreground bg-card hover:translate-y-[-2px]"
+                        ? "border-foreground/50 bg-secondary/50"
+                        : "border-foreground bg-card hover:-translate-y-0.5"
                 }`}
                 style={{
                   boxShadow: submitted
                     ? correct
-                      ? "3px 3px 0px 0px #10B981"
-                      : "3px 3px 0px 0px #EF4444"
+                      ? "var(--shadow-brutal-green)"
+                      : "3px 3px 0px 0px #D93636"
                     : selectedRef === pair.reference
-                      ? "3px 3px 0px 0px #10B981"
-                      : "3px 3px 0px 0px var(--foreground)",
+                      ? "var(--shadow-brutal-green)"
+                      : "var(--shadow-brutal-sm)",
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-black text-foreground text-sm">
+                  <span className="font-black text-foreground text-sm verse-ref">
                     {pair.reference}
                   </span>
                   {submitted &&
                     (correct ? (
-                      <CheckCircle2 className="w-5 h-5 text-[#10B981]" />
+                      <CheckCircle2 className="w-4 h-4" style={{ color: "var(--color-verse-match)" }} />
                     ) : (
-                      <XCircle className="w-5 h-5 text-red-500" />
+                      <XCircle className="w-4 h-4 text-destructive" />
                     ))}
                   {!submitted && matched && (
-                    <div className="w-3 h-3 rounded-full bg-[#3B82F6] border-2 border-foreground" />
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-foreground" style={{ backgroundColor: "var(--color-memorization)" }} />
                   )}
                 </div>
                 {matched && (
-                  <div className="mt-2 text-xs text-muted-foreground line-clamp-2 font-medium">
+                  <div className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2 font-medium">
                     → {matched.slice(0, 50)}...
                   </div>
                 )}
@@ -191,8 +187,8 @@ export function VerseMatchDrill({
         </div>
 
         {/* Verse Texts */}
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+        <div className="space-y-2.5">
+          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5 pl-1">
             Verse Texts
           </div>
           {shuffledTexts.map((text) => {
@@ -203,20 +199,20 @@ export function VerseMatchDrill({
                 key={text}
                 onClick={() => handleTextClick(text)}
                 disabled={submitted || !selectedRef}
-                className={`w-full p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
+                className={`w-full p-3.5 rounded-xl border-2 text-left transition-all duration-150 ${
                   submitted
                     ? "border-foreground bg-background"
                     : matched
-                      ? "border-[#3B82F6] bg-[#3B82F6]/5 opacity-60"
+                      ? "border-foreground/30 bg-secondary/30 opacity-60"
                       : selectedRef
-                        ? "border-foreground bg-card hover:border-[#10B981] hover:bg-[#10B981]/5 hover:translate-y-[-2px] cursor-pointer"
-                        : "border-foreground/30 bg-background opacity-70"
+                        ? "border-foreground bg-card hover:bg-[#D6F5E5]/30 hover:-translate-y-0.5 cursor-pointer"
+                        : "border-foreground/20 bg-background opacity-70"
                 }`}
                 style={{
                   boxShadow:
                     submitted || matched || !selectedRef
                       ? "none"
-                      : "3px 3px 0px 0px var(--foreground)",
+                      : "var(--shadow-brutal-sm)",
                 }}
               >
                 <p className="text-sm text-foreground leading-relaxed font-medium">
@@ -232,9 +228,9 @@ export function VerseMatchDrill({
       {!submitted && Object.keys(matches).length > 0 && (
         <button
           onClick={handleReset}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-bold transition-colors mx-auto"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-xs font-bold transition-colors mx-auto uppercase tracking-wider"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" />
           Reset Matches
         </button>
       )}
@@ -243,20 +239,20 @@ export function VerseMatchDrill({
       {submitted ? (
         <div className="space-y-4">
           <div
-            className="rounded-2xl bg-card border-2 border-foreground p-6 text-center"
-            style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+            className="rounded-xl bg-card border-2 border-foreground p-6 text-center"
+            style={{ boxShadow: "var(--shadow-brutal)" }}
           >
             <div className="flex items-center justify-center gap-2 mb-2">
               {score >= 75 ? (
-                <CheckCircle2 className="w-6 h-6 text-[#10B981]" />
+                <CheckCircle2 className="w-6 h-6" style={{ color: "var(--color-verse-match)" }} />
               ) : (
-                <XCircle className="w-6 h-6 text-[#F59E0B]" />
+                <XCircle className="w-6 h-6" style={{ color: "var(--color-context)" }} />
               )}
-              <span className="text-2xl font-black text-foreground">
+              <span className="text-2xl font-black text-foreground score-display">
                 {score}/100
               </span>
             </div>
-            <p className="text-muted-foreground text-sm font-medium">
+            <p className="text-muted-foreground text-xs font-bold">
               {score === 100
                 ? "Perfect matching! Your verse recall is strong!"
                 : score >= 75
@@ -267,20 +263,18 @@ export function VerseMatchDrill({
             </p>
           </div>
 
-          <div className="flex gap-4 w-full">
+          <div className="flex gap-3 w-full">
             {isPractice && onExit && (
               <button
                 onClick={onExit}
-                className="w-full py-4 rounded-full bg-card text-foreground font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+                className="w-full py-3.5 rounded-xl bg-card text-foreground font-black text-sm border-2 border-foreground btn-brutal"
               >
                 Go Back
               </button>
             )}
             <button
               onClick={() => onComplete(score)}
-              className="w-full py-4 rounded-full bg-primary text-white font-bold text-base border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+              className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-black text-sm border-2 border-foreground btn-brutal uppercase tracking-wide"
             >
               {isPractice ? "Play Again →" : "Complete Workout →"}
             </button>
@@ -290,16 +284,19 @@ export function VerseMatchDrill({
         <button
           onClick={handleSubmit}
           disabled={Object.keys(matches).length < drill.pairs.length}
-          className={`w-full py-4 rounded-full font-bold text-base transition-all duration-200 border-2 border-foreground ${
+          className={`w-full py-3.5 rounded-xl font-black text-sm transition-all duration-150 border-2 border-foreground uppercase tracking-wide ${
             Object.keys(matches).length < drill.pairs.length
-              ? "bg-muted text-[#B0AAA2] cursor-not-allowed"
-              : "bg-[#10B981] text-white hover:translate-x-[-2px] hover:translate-y-[-2px]"
+              ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
+              : "text-white btn-brutal"
           }`}
           style={{
+            backgroundColor: Object.keys(matches).length < drill.pairs.length
+              ? undefined
+              : "var(--color-verse-match)",
             boxShadow:
               Object.keys(matches).length < drill.pairs.length
                 ? "none"
-                : "4px 4px 0px 0px var(--foreground)",
+                : "var(--shadow-brutal)",
           }}
         >
           {Object.keys(matches).length < drill.pairs.length

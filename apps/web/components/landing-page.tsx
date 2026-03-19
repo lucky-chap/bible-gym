@@ -1,255 +1,213 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Flame,
   Target,
   Users,
   ChevronRight,
-  Dumbbell,
   BookOpen,
   Zap,
   Star,
   Trophy,
   Heart,
   Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Timer,
+  GripVertical,
 } from "lucide-react";
-import Link from "next/link";
+import { SignInButton, SignUpButton, Show } from "@clerk/nextjs";
+
+const drills = [
+  {
+    icon: BookOpen,
+    title: "Fill the Blank",
+    desc: "Memorize key verses with rapid-fire blanks.",
+    accent: "var(--color-memorization)",
+  },
+  {
+    icon: Target,
+    title: "Context Check",
+    desc: "Author, audience, era—answer in seconds.",
+    accent: "var(--color-context)",
+  },
+  {
+    icon: Zap,
+    title: "Reference Match",
+    desc: "Pair references with the right text fast.",
+    accent: "var(--color-verse-match)",
+  },
+];
+
+const stats = [
+  { icon: Flame, value: "300", label: "Max Daily Points" },
+  { icon: Target, value: "3", label: "Drills Per Day" },
+  { icon: Trophy, value: "∞", label: "Streak Potential" },
+  { icon: Sparkles, value: "Auto-Sync", label: "Cloud Sync Active" },
+];
+
+const categories = [
+  "New Believers",
+  "Small Groups",
+  "Youth Ministry",
+  "Personal Study",
+  "Bible Scholars",
+  "Sunday School",
+  "Family Devotions",
+  "Church Leaders",
+  "Seminary Students",
+  "Prayer Warriors",
+];
 
 export function LandingPage() {
   const router = useRouter();
 
   return (
-    <div className="text-foreground w-full">
+    <div className="text-foreground w-full bg-background pattern-ink-dots">
       {/* ===================== HERO ===================== */}
-      <header className="bg-background py-20 md:py-28 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-primary leading-[1.05] tracking-tight mb-6 ">
-            Train Your Spirit.
+      <header className="relative py-20 md:py-32 overflow-hidden border-b-2 border-foreground bg-card">
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+
+        <div className="relative max-w-6xl mx-auto px-6 text-center">
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-foreground bg-secondary text-[11px] font-black uppercase tracking-widest mb-8"
+            style={{ boxShadow: "var(--shadow-brutal-press)" }}
+          >
+            <GripVertical className="w-4 h-4 text-primary" />
+            Scripture Forge · Athletics For The Soul
+          </div>
+
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black leading-[0.95] tracking-tighter mb-8 animate-stamp">
+            Study that feels playful, <br />
+            <span className="text-primary italic">sticks</span> fast.
           </h1>
-          <p className="text-lg md:text-xl text-foreground font-medium max-w-2xl mx-auto mb-10">
-            Structured daily workouts to build <strong>Bible knowledge</strong>,
-            deepen understanding, and grow your faith — one drill at a time.
+
+          <p className="text-lg md:text-xl text-muted-foreground font-medium max-w-2xl mx-auto mb-12 leading-relaxed animate-in stagger-2">
+            Word Mastery keeps the Neo‑Brutalist vibe—bold strokes, rounded
+            cards, zero gradients—so the drills feel tangible and focused.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <button
-              onClick={() => router.push("/auth")}
-              className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-primary text-white font-bold text-lg border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
-            >
-              Start Training
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <Link href="/why-this">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20 animate-in stagger-3">
+            <Show when="signed-out">
+              <SignUpButton mode="modal">
+                <button className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-xl bg-primary text-primary-foreground font-black text-xl border-2 border-foreground btn-brutal uppercase tracking-wider">
+                  Start Training
+                  <ArrowRight className="w-6 h-6" />
+                </button>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <button className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-xl bg-card text-foreground font-bold text-xl border-2 border-foreground btn-brutal">
+                  Sign In
+                </button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
               <button
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-card text-foreground font-bold text-lg border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
+                onClick={() => router.push("/dashboard")}
+                className="inline-flex items-center justify-center gap-3 px-12 py-5 rounded-xl bg-primary text-primary-foreground font-black text-xl border-2 border-foreground btn-brutal uppercase tracking-wider"
               >
-                Why This?
+                Enter Arena
+                <Flame className="w-6 h-6" />
               </button>
-            </Link>
+            </Show>
           </div>
 
           {/* Floating drill preview cards */}
-          <div className="flex flex-wrap justify-center gap-4 max-w-3xl mx-auto">
-            {[
-              {
-                icon: BookOpen,
-                text: "Fill in the missing words...",
-                label: "Memorization",
-                color: "#3B82F6",
-              },
-              {
-                icon: Target,
-                text: "Who wrote this passage?",
-                label: "Context Challenge",
-                color: "#F59E0B",
-              },
-              {
-                icon: Zap,
-                text: "Match verse to reference",
-                label: "Verse Match",
-                color: "#10B981",
-              },
-            ].map((card) => (
+          <div className="flex flex-wrap justify-center gap-6 max-w-4xl mx-auto animate-slide-up stagger-4">
+            {drills.map((drill) => (
               <div
-                key={card.label}
-                className="rounded-2xl border-2 border-foreground p-5 w-56 text-left hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default"
+                key={drill.title}
+                className="rounded-2xl border-2 border-foreground p-6 w-full sm:w-64 text-left bg-card card-brutal transition-transform"
                 style={{
-                  boxShadow: "4px 4px 0px 0px var(--foreground)",
-                  backgroundColor: `${card.color}10`,
+                  borderBottomWidth: "6px",
+                  borderBottomColor: drill.accent,
                 }}
               >
                 <div
-                  className="w-10 h-10 rounded-lg border-2 border-foreground flex items-center justify-center mb-3"
-                  style={{ backgroundColor: card.color }}
+                  className="w-12 h-12 rounded-xl border-2 border-foreground flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: drill.accent }}
                 >
-                  <card.icon className="w-5 h-5 text-white" />
+                  <drill.icon className="w-6 h-6 text-white" />
                 </div>
-                <div className="text-xs font-bold text-foreground uppercase tracking-wide mb-1">
-                  {card.label}
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">
+                  {drill.title}
                 </div>
-                <p className="text-sm text-muted-foreground ">
-                  &ldquo;{card.text}&rdquo;
+                <p className="text-sm text-foreground font-bold leading-snug">
+                  &ldquo;{drill.desc}&rdquo;
                 </p>
               </div>
             ))}
-            <div className="w-full mt-8 flex items-center justify-center gap-2 text-muted-foreground font-bold bg-primary/5 py-3 px-6 rounded-full border-2 border-dashed border-primary/20">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span>
-                Cloud Sync Active — Your progress is automatically saved to your
-                account.
-              </span>
+
+            <div className="w-full mt-10 flex items-center justify-center gap-3 text-muted-foreground font-black uppercase tracking-widest text-[11px] bg-secondary/50 py-4 px-8 rounded-xl border-2 border-dashed border-foreground/20">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <span>Sync Active — Your progress is saved as you train.</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* ===================== FEATURES (Dark section) ===================== */}
-      <section className="bg-foreground py-20 md:py-28 md:pb-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black text-white mb-4 ">
-              Your Daily Spiritual Workout
+      <section className="bg-foreground py-24 md:py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-6 relative">
+          <div className="text-center mb-20 space-y-4">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+              YOUR DAILY <br />
+              <span className="text-primary italic">SPIRITUAL WORKOUT</span>
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="text-primary-foreground/40 text-lg md:text-xl max-w-2xl mx-auto font-medium">
               Three focused drills designed to strengthen different aspects of
-              your Scripture knowledge.
+              your Scripture knowledge. Built for recall, not just reading.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: BookOpen,
-                title: "Memorization Drill",
-                desc: "Fill in missing words from key Bible passages. Build muscle memory for Scripture.",
-                color: "#3B82F6",
-              },
-              {
-                icon: Target,
-                title: "Context Challenge",
-                desc: "Answer questions about passage context, authorship, and historical background.",
-                color: "#F59E0B",
-              },
-              {
-                icon: Zap,
-                title: "Verse Match",
-                desc: "Match Bible references with their correct verse text. Test your recall.",
-                color: "#10B981",
-              },
-            ].map((feature) => (
+          <div className="grid md:grid-cols-3 gap-8">
+            {drills.map((drill) => (
               <div
-                key={feature.title}
-                className="group relative rounded-2xl border-2 border-white/20 bg-card/5 p-8 hover:bg-card/10 hover:translate-y-[-4px] transition-all duration-300"
-                style={{ boxShadow: "4px 4px 0px 0px rgba(233, 77, 118, 0.5)" }}
+                key={drill.title}
+                className="group relative rounded-2xl border-2 border-white/20 bg-white/5 p-8 transition-all hover:bg-white/10"
+                style={{ boxShadow: `4px 4px 0px 0px ${drill.accent}80` }}
               >
                 <div
-                  className="w-14 h-14 rounded-2xl border-2 border-white/30 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"
-                  style={{ backgroundColor: feature.color }}
+                  className="w-14 h-14 rounded-2xl border-2 border-white/30 flex items-center justify-center mb-6 transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: drill.accent }}
                 >
-                  <feature.icon className="w-7 h-7 text-white" />
+                  <drill.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  {feature.title}
+                <h3 className="text-2xl font-black text-white mb-3 tracking-tight">
+                  {drill.title}
                 </h3>
-                <p className="text-gray-400 leading-relaxed">{feature.desc}</p>
+                <p className="text-primary-foreground/60 leading-relaxed font-medium">
+                  {drill.desc} Repetitive training builds long-term spiritual
+                  muscle memory.
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* will uncomment this section when you i real social proof */}
-      {/* ===================== SOCIAL PROOF (Pink section) ===================== */}
-      {/* <section className="bg-primary py-20 md:py-28">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-4 text-center ">
-            Used And Loved By
-          </h2>
-          <p className="text-white/80 text-lg text-center mb-12 max-w-xl mx-auto">
-            Word Mastery is trusted by believers everywhere to build consistent
-            Scripture study habits.
-          </p>
-
-          <div className="flex overflow-x-auto gap-5 pb-4 -mx-6 px-6 snap-x snap-mandatory scrollbar-hide">
-            {[
-              {
-                text: "This app makes Scripture study feel like a workout — in the best way!",
-                name: "Sarah K.",
-              },
-              {
-                text: "My Bible knowledge has dramatically improved since starting.",
-                name: "Marcus J.",
-              },
-              {
-                text: "Love the gamified approach. Keeps me coming back daily!",
-                name: "Rachel T.",
-              },
-              {
-                text: "Our small group uses this together. Friendly competition helps!",
-                name: "David M.",
-              },
-              {
-                text: "The verse match drill is addictive. I've memorized so many verses.",
-                name: "Emily W.",
-              },
-              {
-                text: "Simple, beautiful, and effective. 10/10 from me!",
-                name: "Joshua L.",
-              },
-            ].map((testimonial) => (
-              <div
-                key={testimonial.name}
-                className="shrink-0 w-72 snap-start bg-card rounded-2xl border-2 border-foreground p-6 hover:translate-y-[-4px] transition-all duration-200"
-                style={{ boxShadow: "4px 4px 0px 0px var(--primary)" }}
-              >
-                <div className="flex gap-1 mb-3">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      className="w-5 h-5 fill-foreground text-foreground"
-                    />
-                  ))}
-                </div>
-                <p className="text-foreground font-medium text-sm mb-4 leading-relaxed">
-                  {testimonial.text}
-                </p>
-                <p className="text-muted-foreground text-sm font-bold">
-                  {testimonial.name}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
       {/* ===================== STATS ===================== */}
-      <section className="bg-foreground py-20">
-        <div className="max-w-5xl mx-auto px-6">
+      <section className="bg-background py-24 border-b-2 border-foreground">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { icon: Flame, value: "300", label: "Max Daily Points" },
-              { icon: Target, value: "3", label: "Drills Per Day" },
-              { icon: Trophy, value: "∞", label: "Streak Potential" },
-              { icon: Sparkles, value: "Auto-Sync", label: "Data Never Lost" },
-            ].map((stat) => (
+            {stats.map((stat) => (
               <div
                 key={stat.label}
-                className="bg-card rounded-2xl border-2 border-foreground p-6 text-center hover:translate-y-[-4px] transition-all duration-200"
-                style={{ boxShadow: "4px 4px 0px 0px var(--primary)" }}
+                className="bg-card rounded-2xl border-2 border-foreground p-8 text-center card-brutal"
               >
                 <div
-                  className="w-12 h-12 rounded-xl bg-primary border-2 border-foreground flex items-center justify-center mx-auto mb-3"
-                  style={{ boxShadow: "2px 2px 0px 0px var(--foreground)" }}
+                  className="w-12 h-12 rounded-xl bg-secondary border-2 border-foreground flex items-center justify-center mx-auto mb-4"
+                  style={{ boxShadow: "var(--shadow-brutal-press)" }}
                 >
-                  <stat.icon className="w-6 h-6 text-white" />
+                  <stat.icon className="w-6 h-6 text-primary" />
                 </div>
-                <div className="text-3xl font-black text-foreground mb-1">
+                <div className="text-4xl font-black text-foreground mb-1 score-display tracking-tight">
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground font-medium">
+                <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                   {stat.label}
                 </div>
               </div>
@@ -258,34 +216,25 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ===================== OCCASIONS / DRILL TYPES ===================== */}
-      <section className="bg-background py-20 md:py-28">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-5xl font-black text-foreground mb-6 text-center ">
-            Works For Every Believer
+      {/* ===================== OCCASIONS ===================== */}
+      <section className="bg-card py-24 md:py-32 border-b-2 border-foreground relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <h2 className="text-4xl md:text-6xl font-black text-foreground mb-8 tracking-tighter">
+            WORKS FOR EVERY <br />
+            <span className="text-primary italic">BELIEVER</span>
           </h2>
-          <p className="text-muted-foreground text-lg text-center mb-12 max-w-xl mx-auto">
+          <p className="text-muted-foreground text-lg md:text-xl font-medium mb-16 max-w-xl mx-auto leading-relaxed">
             Whether you&apos;re a new believer or a seasoned student, Word
-            Mastery adapts to your level.
+            Mastery adapts to your level through structured repetition.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-3">
-            {[
-              "New Believers",
-              "Small Groups",
-              "Youth Ministry",
-              "Personal Study",
-              "Bible Scholars",
-              "Sunday School",
-              "Family Devotions",
-              "Church Leaders",
-              "Seminary Students",
-              "Prayer Warriors",
-            ].map((category) => (
+          <div className="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
+            {categories.map((category) => (
               <div
                 key={category}
-                className="px-5 py-2.5 rounded-full bg-card border-2 border-foreground text-sm font-bold text-foreground hover:bg-primary hover:text-white hover:translate-y-[-2px] transition-all duration-200 cursor-default"
-                style={{ boxShadow: "3px 3px 0px 0px var(--foreground)" }}
+                className="px-6 py-3 rounded-xl bg-background border-2 border-foreground text-sm font-black text-foreground hover:bg-primary hover:text-white transition-all cursor-default"
+                style={{ boxShadow: "var(--shadow-brutal-sm)" }}
               >
                 {category}
               </div>
@@ -295,28 +244,81 @@ export function LandingPage() {
       </section>
 
       {/* ===================== CTA ===================== */}
-      <section className="bg-primary py-20 md:py-28">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="flex justify-center mb-6">
-            <Heart className="w-12 h-12 text-white fill-white" />
+      <section className="bg-primary py-24 md:py-32 relative overflow-hidden">
+        <div className="absolute inset-0 pattern-ink-dots opacity-10" />
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <div className="flex justify-center mb-8">
+            <div className="w-20 h-20 rounded-2xl bg-white border-4 border-foreground flex items-center justify-center rotate-3 shadow-xl">
+              <Heart className="w-12 h-12 text-primary fill-primary" />
+            </div>
           </div>
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-6 ">
-            Ready To Start Your Training?
+          <h2 className="text-4xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-none">
+            READY TO START <br />
+            <span className="italic">YOUR TRAINING?</span>
           </h2>
-          <p className="text-white/80 text-lg mb-10 max-w-xl mx-auto">
-            Join Word Mastery and build a consistent Scripture study habit. Your
-            daily workout is waiting.
+          <p className="text-white/90 text-lg md:text-xl mb-12 max-w-xl mx-auto font-medium">
+            Join Word Mastery today and build a consistent Scripture study
+            habit. Your first workout is waiting for you.
           </p>
-          <button
-            onClick={() => router.push("/auth")}
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-full bg-card text-foreground font-bold text-lg border-2 border-foreground hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-            style={{ boxShadow: "4px 4px 0px 0px var(--foreground)" }}
-          >
-            Begin Training
-            <Dumbbell className="w-5 h-5" />
-          </button>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Show when="signed-out">
+              <SignUpButton mode="modal">
+                <button className="inline-flex items-center gap-3 px-12 py-5 rounded-xl bg-foreground text-primary-foreground font-black text-2xl border-2 border-primary-foreground btn-brutal uppercase tracking-wider">
+                  Begin Training
+                  <ArrowRight className="w-7 h-7" />
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="inline-flex items-center gap-3 px-12 py-5 rounded-xl bg-foreground text-primary-foreground font-black text-2xl border-2 border-primary-foreground btn-brutal uppercase tracking-wider"
+              >
+                Enter Arena
+                <ArrowRight className="w-7 h-7" />
+              </button>
+            </Show>
+          </div>
         </div>
       </section>
+
+      {/* ===================== FOOTER ===================== */}
+      <footer className="py-16 border-t-2 border-foreground bg-card">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-12">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-primary border-2 border-foreground flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter">
+              Word Mastery
+            </span>
+          </div>
+          <div className="flex gap-10 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+            <Link
+              href="/about"
+              className="hover:text-primary transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/privacy"
+              className="hover:text-primary transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="hover:text-primary transition-colors"
+            >
+              Terms
+            </Link>
+          </div>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+            © 2026 Word Mastery. Training souls.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
